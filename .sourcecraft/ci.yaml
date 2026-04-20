@@ -21,9 +21,14 @@ workflows:
           - name: deploy-functions
             env:
               YC_FOLDER_ID: ${{ tokens.SERVICE_CONNECTION.folder_id }}
-            image: cr.yandex/yandex-cloud/yc:latest
+            image: ubuntu:22.04
             script:
               - |
+                set -e
+                apt-get update -qq && apt-get install -y -qq curl zip bash ca-certificates
+                curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /usr/local -n
+                export PATH=/usr/local/bin:$PATH
+
                 yc config set token $IAM_TOKEN
                 yc config set folder-id $YC_FOLDER_ID
 
