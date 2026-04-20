@@ -47,7 +47,7 @@ async def telegram_webhook(request: Request) -> JSONResponse:
     try:
         data = await request.json()
         update = Update.model_validate(data)
-        await dp.process_update(update)
+        await dp.feed_update(bot=bot, update=update)
     except Exception as e:
         logger.error(f"Ошибка обработки обновления: {e}")
 
