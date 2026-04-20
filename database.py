@@ -4,6 +4,7 @@
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 
 from config import config
 
@@ -16,9 +17,8 @@ class Base(DeclarativeBase):
 engine = create_async_engine(
     config.DATABASE_URL,
     echo=False,
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,  # переподключается при обрыве соединения (важно для Supabase)
+    poolclass=NullPool,
+    connect_args={"statement_cache_size": 0},
 )
 
 SessionLocal = async_sessionmaker(
