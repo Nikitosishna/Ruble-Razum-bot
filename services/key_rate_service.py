@@ -9,6 +9,17 @@ from zeep.transports import Transport
 
 WSDL_URL = "https://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL"
 
+# Кэш клиента zeep — создаётся один раз, переиспользуется в рамках одного экземпляра функции
+_cbr_client = None
+
+
+def _get_cbr_client():
+    global _cbr_client
+    if _cbr_client is None:
+        transport = Transport(timeout=15)
+        _cbr_client = Client(wsdl=WSDL_URL, transport=transport)
+    return _cbr_client
+
 
 def _extract_rate_from_lxml_element(root_element) -> str:
     """
@@ -47,9 +58,7 @@ async def fetch_key_rate() -> str:
     for attempt in range(3):
         try:
             def _load_rate():
-                transport = Transport(timeout=15)
-                client = Client(wsdl=WSDL_URL, transport=transport)
-
+                client = _get_cbr_client()
                 result = client.service.KeyRateXML(from_date, today)
 
                 if result is None:

@@ -1,7 +1,7 @@
 # Единое место создания бота и диспетчера.
-# Импортируется всеми api-функциями на Vercel и main.py локально.
-# На Vercel используется RedisStorage (Upstash).
-# Локально — MemoryStorage (если REDIS_URL не задан).
+# Импортируется обработчиками Yandex Cloud Functions (yc/) и main.py при локальном запуске.
+# В продакшне (Yandex Cloud) используется RedisStorage — FSM-состояния хранятся в Upstash Redis.
+# Локально — MemoryStorage (если REDIS_URL не задан в .env).
 
 from aiogram import Bot
 from aiogram.dispatcher.dispatcher import Dispatcher
@@ -16,7 +16,7 @@ def create_bot() -> Bot:
 
 def create_dispatcher() -> Dispatcher:
     if config.REDIS_URL:
-        # Продакшн: FSM-состояния в Redis (Upstash)
+        # Продакшн (Yandex Cloud): FSM-состояния в Redis (Upstash)
         import redis.asyncio as aioredis
         from aiogram.fsm.storage.redis import RedisStorage
 
@@ -32,6 +32,6 @@ def create_dispatcher() -> Dispatcher:
     return dp
 
 
-# Создаём один раз при холодном старте — переиспользуются между запросами
+# Создаются один раз при холодном старте — переиспользуются между запросами в рамках одного экземпляра
 bot = create_bot()
 dp = create_dispatcher()

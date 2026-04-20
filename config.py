@@ -20,7 +20,10 @@ class Config:
     YOOKASSA_SECRET_KEY: str = os.getenv("YOOKASSA_SECRET_KEY")
     ADMIN_ID: int = int(os.getenv("ADMIN_ID", "0"))
 
-    # Vercel / продакшн
+    # Продакшн (Yandex Cloud)
+    # REDIS_URL — Upstash Redis для хранения FSM-состояний между запросами
+    # WEBHOOK_URL — HTTPS-адрес функции yc/webhook.py (из Yandex API Gateway)
+    # CRON_SECRET — секрет для защиты cron-эндпоинтов yc/reminders.py и yc/results.py
     REDIS_URL: str = os.getenv("REDIS_URL", "")
     WEBHOOK_URL: str = os.getenv("WEBHOOK_URL", "")
     CRON_SECRET: str = os.getenv("CRON_SECRET", "")
