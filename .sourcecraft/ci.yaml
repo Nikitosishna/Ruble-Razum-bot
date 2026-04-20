@@ -1,7 +1,5 @@
 on:
   push:
-    branches:
-      - main
 
 tokens:
   SERVICE_CONNECTION:
