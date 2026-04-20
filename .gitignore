@@ -1,0 +1,17 @@
+# Секреты — никогда не попадают в Git
+.env
+
+# Виртуальное окружение
+venv/
+
+# Кэш Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.idea/
+.vscode/
+
+# Claude
+.claude/
