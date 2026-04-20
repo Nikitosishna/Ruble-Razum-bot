@@ -24,13 +24,20 @@ workflows:
                 export PATH=/usr/local/bin:$PATH
 
                 # Обмениваем ID-токен сервисного подключения на IAM-токен Яндекс Облака
-                IAM_TOKEN=$(curl -s -X POST \
+                echo "=== ID_TOKEN length: ${#ID_TOKEN} ==="
+                echo "=== ID_TOKEN first 40 chars: ${ID_TOKEN:0:40} ==="
+
+                RESPONSE=$(curl -s -X POST \
                   -H "Content-Type: application/x-www-form-urlencoded" \
                   -d "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
                   --data-urlencode "requested_token_type=urn:ietf:params:oauth:token-type:access_token" \
                   --data-urlencode "subject_token=$ID_TOKEN" \
                   --data-urlencode "subject_token_type=urn:ietf:params:oauth:token-type:id_token" \
-                  https://auth.yandex.cloud/oauth/token | jq -r .access_token)
+                  https://auth.yandex.cloud/oauth/token)
+
+                echo "=== OAuth response: $RESPONSE ==="
+
+                IAM_TOKEN=$(echo "$RESPONSE" | jq -r .access_token)
 
                 if [ -z "$IAM_TOKEN" ] || [ "$IAM_TOKEN" = "null" ]; then
                   echo "ERROR: failed to obtain IAM token"
