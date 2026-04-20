@@ -23,21 +23,22 @@ workflows:
               YC_TOKEN: ${{ tasks.deploy.get-iam.IAM_TOKEN }}
               YC_FOLDER_ID: ${{ tokens.SERVICE_CONNECTION.folder_id }}
             image: cr.yandex/yandex-cloud/yc:latest
-            script: |
-              yc config set token $YC_TOKEN
-              yc config set folder-id $YC_FOLDER_ID
+            script:
+              - |
+                yc config set token $YC_TOKEN
+                yc config set folder-id $YC_FOLDER_ID
 
-              zip -r /tmp/bot.zip . -x "venv/*" ".env" "__pycache__/*" "*.pyc" ".git/*"
+                zip -r /tmp/bot.zip . -x "venv/*" ".env" "__pycache__/*" "*.pyc" ".git/*"
 
-              for FUNC in "tg-webhook:yc.webhook.handler" "yc-payment:yc.payment.handler" "yc-reminders:yc.reminders.handler" "yc-results:yc.results.handler"; do
-                NAME="${FUNC%%:*}"
-                ENTRY="${FUNC##*:}"
-                yc serverless function create --name $NAME --folder-id $YC_FOLDER_ID 2>/dev/null || true
-                yc serverless function version create \
-                  --function-name $NAME \
-                  --runtime python311 \
-                  --entrypoint $ENTRY \
-                  --memory 512m \
-                  --execution-timeout 60s \
-                  --source-path /tmp/bot.zip
-              done
+                for FUNC in "tg-webhook:yc.webhook.handler" "yc-payment:yc.payment.handler" "yc-reminders:yc.reminders.handler" "yc-results:yc.results.handler"; do
+                  NAME="${FUNC%%:*}"
+                  ENTRY="${FUNC##*:}"
+                  yc serverless function create --name $NAME --folder-id $YC_FOLDER_ID 2>/dev/null || true
+                  yc serverless function version create \
+                    --function-name $NAME \
+                    --runtime python311 \
+                    --entrypoint $ENTRY \
+                    --memory 512m \
+                    --execution-timeout 60s \
+                    --source-path /tmp/bot.zip
+                done
