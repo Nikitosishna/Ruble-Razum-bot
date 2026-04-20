@@ -20,12 +20,11 @@ workflows:
 
           - name: deploy-functions
             env:
-              YC_TOKEN: ${{ tasks.deploy.get-iam.IAM_TOKEN }}
               YC_FOLDER_ID: ${{ tokens.SERVICE_CONNECTION.folder_id }}
             image: cr.yandex/yandex-cloud/yc:latest
             script:
               - |
-                yc config set token $YC_TOKEN
+                yc config set token $IAM_TOKEN
                 yc config set folder-id $YC_FOLDER_ID
 
                 zip -r /tmp/bot.zip . -x "venv/*" ".env" "__pycache__/*" "*.pyc" ".git/*"
