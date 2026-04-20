@@ -96,4 +96,4 @@ python main.py
 
 ## Автор
 
-Pet project — [@rub_and_razum](https://t.me/rub_and_razum)
+Pet project — [@rub_and_razum](https://t.me/rub_and_razum) / @Nikitosishna
