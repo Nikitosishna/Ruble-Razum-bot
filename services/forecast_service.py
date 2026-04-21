@@ -88,16 +88,10 @@ async def get_next_meeting() -> CBRMeeting | None:
         return result.scalar_one_or_none()
 
 
-async def is_forecast_window_open() -> bool:
-    """
-    Окно прогноза открыто если:
-    - до заседания 2 дня или меньше
-    - до заседания ещё больше 30 минут
-    """
-    meeting = await get_next_meeting()
+def _check_window_open(meeting) -> bool:
+    """Проверяет окно прогноза по уже загруженному объекту заседания (без запроса в БД)."""
     if not meeting:
         return False
-
     now = datetime.now(tz=MSK)
     meeting_aware = datetime(
         meeting.meeting_date.year,
@@ -107,6 +101,16 @@ async def is_forecast_window_open() -> bool:
     )
     minutes_left = (meeting_aware - now).total_seconds() / 60
     return 30 <= minutes_left <= 2 * 24 * 60
+
+
+async def is_forecast_window_open() -> bool:
+    """
+    Окно прогноза открыто если:
+    - до заседания 2 дня или меньше
+    - до заседания ещё больше 30 минут
+    """
+    meeting = await get_next_meeting()
+    return _check_window_open(meeting)
 
 
 def normalize_forecast(raw: str) -> float | None:

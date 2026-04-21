@@ -34,6 +34,7 @@ from services.forecast_service import (
     get_next_meeting,
     get_all_meetings,
     is_forecast_window_open,
+    _check_window_open,
     get_user_forecast,
     save_forecast,
     normalize_forecast,
@@ -260,16 +261,20 @@ async def key_rate_handler(message: Message) -> None:
     Умный обработчик кнопки 'Ключевая ставка ЦБ РФ'.
     Показывает разный текст и кнопки в зависимости от ситуации.
     """
+    import asyncio as _asyncio
+
+    # Параллельно запрашиваем ставку ЦБ и следующее заседание
     try:
-        rate_text = await get_key_rate_text()
+        rate_text, next_meeting = await _asyncio.gather(
+            get_key_rate_text(),
+            get_next_meeting(),
+        )
     except Exception:
         await message.answer("Не удалось получить ключевую ставку. Попробуй позже.")
         return
 
-    next_meeting = await get_next_meeting()
-    window_open = await is_forecast_window_open()
+    window_open = _check_window_open(next_meeting)
 
-    # Форматируем дату следующего заседания
     if next_meeting:
         d = next_meeting.meeting_date
         meeting_str = f"{d.day} {MONTHS_RU[d.month]} {d.year}"
@@ -277,7 +282,6 @@ async def key_rate_handler(message: Message) -> None:
         meeting_str = "дата уточняется"
 
     if not window_open:
-        # Обычный режим — только ставка и дата следующего заседания
         await message.answer(
             f"🔑 {rate_text}\n\n"
             f"Следующее заседание по ставке состоится <b>{meeting_str}</b>.",
@@ -285,10 +289,12 @@ async def key_rate_handler(message: Message) -> None:
         )
         return
 
-    # Окно прогноза открыто — проверяем, есть ли уже прогноз у пользователя
-    user_forecast = await get_user_forecast(message.from_user.id, next_meeting.id)
-    subscribed = await is_user_subscribed(message.from_user.id)
-    history = await get_user_forecast_history(message.from_user.id)
+    # Окно открыто — параллельно запрашиваем прогноз, подписку и историю
+    user_forecast, subscribed, history = await _asyncio.gather(
+        get_user_forecast(message.from_user.id, next_meeting.id),
+        is_user_subscribed(message.from_user.id),
+        get_user_forecast_history(message.from_user.id),
+    )
 
     if user_forecast:
         text = (
