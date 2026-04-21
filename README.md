@@ -100,47 +100,6 @@ Scheduler → GET  /results   → yc/results.py    — 13:30 МСК, итоги 
 
 ---
 
-## Локальный запуск
-
-### 1. Клонировать репозиторий
-
-```bash
-git clone https://github.com/Nikitosishna/Ruble-Razum-bot.git
-cd Ruble-Razum-bot
-```
-
-### 2. Создать виртуальное окружение
-
-```bash
-python -m venv venv
-venv\Scripts\activate      # Windows
-# source venv/bin/activate  # Linux/Mac
-```
-
-### 3. Установить зависимости
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Настроить переменные окружения
-
-```bash
-cp .env.example .env
-# Открыть .env и заполнить: BOT_TOKEN, DATABASE_URL, YOOKASSA_*, ADMIN_ID
-# REDIS_URL и WEBHOOK_URL для локального запуска не нужны
-```
-
-### 5. Запустить бота
-
-```bash
-python main.py
-```
-
-Локально бот работает в режиме **polling** — `REDIS_URL` и `WEBHOOK_URL` можно не заполнять.
-
----
-
 ## Переменные окружения
 
 Все переменные описаны в файле [`.env.example`](.env.example).
@@ -232,4 +191,4 @@ Sourcecraft автоматически запускает пайплайн из 
 
 ## Автор
 
-Pet project — [@rub_and_razum](https://t.me/rub_and_razum)
+Pet project — [@rub_and_razum](https://t.me/rub_and_razum) | [@Nikitososhna](https://t.me/Nikitososhna)

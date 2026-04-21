@@ -385,16 +385,12 @@ async def buy_guide_callback(callback: CallbackQuery) -> None:
 
         confirmation_url = payment_data.get("confirmation_url")
         if confirmation_url:
-            pay_keyboard = InlineKeyboardMarkup(inline_keyboard=[[
-                InlineKeyboardButton(text="💳 Оплатить", url=confirmation_url),
-                InlineKeyboardButton(text="✅ Проверить оплату", callback_data="check_payment_status"),
-            ]])
             await callback.message.answer(
                 text=(
                     "✅ <b>Платёж создан!</b>\n\n"
-                    "После оплаты нажми «Проверить оплату» — гайд придёт автоматически."
+                    f"🔗 <a href='{confirmation_url}'>Перейти к оплате</a>\n\n"
+                    "После оплаты гайд придёт в этот чат автоматически."
                 ),
-                reply_markup=pay_keyboard,
                 parse_mode="HTML"
             )
         else:
