@@ -40,7 +40,7 @@ def get_currency_inline_keyboard() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="₺ Турецкая лира 🇹🇷", callback_data="currency_try")],
             [InlineKeyboardButton(text="£ Фунт стерлингов 🇬🇧", callback_data="currency_gbp")],
             [InlineKeyboardButton(text="₾ Грузинский лари 🇬🇪", callback_data="currency_gel")],
-            [InlineKeyboardButton(text="Б Белорусский рубль 🇧🇾", callback_data="currency_byn")],
+            [InlineKeyboardButton(text="Б̶ Белорусский рубль 🇧🇾", callback_data="currency_byn")],
             [InlineKeyboardButton(text="₸ Казахстанский тенге 🇰🇿", callback_data="currency_kzt")],
             [InlineKeyboardButton(text="₣ Швейцарский франк 🇨🇭", callback_data="currency_chf")],
             [InlineKeyboardButton(text="Bitcoin 🌐", callback_data="currency_btc")],

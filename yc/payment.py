@@ -6,6 +6,9 @@ import base64
 import json
 import logging
 
+_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(_loop)
+
 from bot_instance import bot
 from services.payment_service import get_payment_status
 from services.db_service import get_payment_by_payment_id, update_payment_status
@@ -69,4 +72,4 @@ async def _handle(event: dict) -> dict:
 
 def handler(event, context):
     """Точка входа для Yandex Cloud Functions."""
-    return asyncio.run(_handle(event))
+    return _loop.run_until_complete(_handle(event))
