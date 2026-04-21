@@ -9,7 +9,6 @@ import logging
 from aiogram.types import Update
 
 from bot_instance import bot, dp
-from config import config
 from services.db_service import init_db
 from services.forecast_service import seed_meeting_dates
 
@@ -25,9 +24,6 @@ async def _init():
     if not _initialized:
         await init_db()
         await seed_meeting_dates()
-        if config.WEBHOOK_URL:
-            await bot.set_webhook(config.WEBHOOK_URL)
-            logger.info(f"Webhook установлен: {config.WEBHOOK_URL}")
         _initialized = True
 
 

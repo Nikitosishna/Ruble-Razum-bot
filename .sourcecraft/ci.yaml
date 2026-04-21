@@ -33,95 +33,83 @@ workflows:
         type: string
         required: true
         description: REDIS_URL (Upstash Redis)
-      cron-secret:
-        type: string
-        required: true
-        description: CRON_SECRET (any random string)
 
     tasks:
       - name: deploy-tg-backend-task
         cubes:
 
-          # 1. Деплой основной функции (webhook от Telegram)
           - name: deploy-webhook
             env:
               ID_TOKEN: ${{ tokens.SERVICE_CONNECTION.id_token }}
               YC_SA_ID: ${{ tokens.SERVICE_CONNECTION.service_account_id }}
               YC_FOLDER_ID: ${{ tokens.SERVICE_CONNECTION.folder_id }}
               YC_FUNCTION_NAME: tg-webhook
-              YC_FUNCTION_RUNTIME: python311
+              YC_FUNCTION_RUNTIME: python312
               YC_FUNCTION_ENTRYPOINT: yc.webhook.handler
               SOURCE_PATH: "."
               PUBLIC: "true"
-              ENVIRONMENT: "BOT_TOKEN=${{ inputs.bot-token }},DATABASE_URL=${{ inputs.database-url }},YOOKASSA_SHOP_ID=${{ inputs.yookassa-shop-id }},YOOKASSA_SECRET_KEY=${{ inputs.yookassa-secret-key }},ADMIN_ID=${{ inputs.admin-id }},REDIS_URL=${{ inputs.redis-url }},CRON_SECRET=${{ inputs.cron-secret }}"
+              ENVIRONMENT: "BOT_TOKEN=${{ inputs.bot-token }},DATABASE_URL=${{ inputs.database-url }},YOOKASSA_SHOP_ID=${{ inputs.yookassa-shop-id }},YOOKASSA_SECRET_KEY=${{ inputs.yookassa-secret-key }},ADMIN_ID=${{ inputs.admin-id }},REDIS_URL=${{ inputs.redis-url }}"
             image: cr.yandex/sourcecraft/yc-function:latest
 
-          # 2. Деплой функции оплаты (webhook от ЮKassa)
           - name: deploy-payment
             env:
               ID_TOKEN: ${{ tokens.SERVICE_CONNECTION.id_token }}
               YC_SA_ID: ${{ tokens.SERVICE_CONNECTION.service_account_id }}
               YC_FOLDER_ID: ${{ tokens.SERVICE_CONNECTION.folder_id }}
               YC_FUNCTION_NAME: yc-payment
-              YC_FUNCTION_RUNTIME: python311
+              YC_FUNCTION_RUNTIME: python312
               YC_FUNCTION_ENTRYPOINT: yc.payment.handler
               SOURCE_PATH: "."
               PUBLIC: "true"
-              ENVIRONMENT: "BOT_TOKEN=${{ inputs.bot-token }},DATABASE_URL=${{ inputs.database-url }},YOOKASSA_SHOP_ID=${{ inputs.yookassa-shop-id }},YOOKASSA_SECRET_KEY=${{ inputs.yookassa-secret-key }},ADMIN_ID=${{ inputs.admin-id }},REDIS_URL=${{ inputs.redis-url }},CRON_SECRET=${{ inputs.cron-secret }}"
+              ENVIRONMENT: "BOT_TOKEN=${{ inputs.bot-token }},DATABASE_URL=${{ inputs.database-url }},YOOKASSA_SHOP_ID=${{ inputs.yookassa-shop-id }},YOOKASSA_SECRET_KEY=${{ inputs.yookassa-secret-key }},ADMIN_ID=${{ inputs.admin-id }},REDIS_URL=${{ inputs.redis-url }}"
             image: cr.yandex/sourcecraft/yc-function:latest
 
-          # 3. Деплой функции напоминаний (cron 10:00 МСК)
           - name: deploy-reminders
             env:
               ID_TOKEN: ${{ tokens.SERVICE_CONNECTION.id_token }}
               YC_SA_ID: ${{ tokens.SERVICE_CONNECTION.service_account_id }}
               YC_FOLDER_ID: ${{ tokens.SERVICE_CONNECTION.folder_id }}
               YC_FUNCTION_NAME: yc-reminders
-              YC_FUNCTION_RUNTIME: python311
+              YC_FUNCTION_RUNTIME: python312
               YC_FUNCTION_ENTRYPOINT: yc.reminders.handler
               SOURCE_PATH: "."
               PUBLIC: "true"
-              ENVIRONMENT: "BOT_TOKEN=${{ inputs.bot-token }},DATABASE_URL=${{ inputs.database-url }},ADMIN_ID=${{ inputs.admin-id }},REDIS_URL=${{ inputs.redis-url }},CRON_SECRET=${{ inputs.cron-secret }}"
+              ENVIRONMENT: "BOT_TOKEN=${{ inputs.bot-token }},DATABASE_URL=${{ inputs.database-url }},ADMIN_ID=${{ inputs.admin-id }},REDIS_URL=${{ inputs.redis-url }}"
             image: cr.yandex/sourcecraft/yc-function:latest
 
-          # 4. Деплой функции итогов заседания ЦБ (cron 13:30 МСК)
           - name: deploy-results
             env:
               ID_TOKEN: ${{ tokens.SERVICE_CONNECTION.id_token }}
               YC_SA_ID: ${{ tokens.SERVICE_CONNECTION.service_account_id }}
               YC_FOLDER_ID: ${{ tokens.SERVICE_CONNECTION.folder_id }}
               YC_FUNCTION_NAME: yc-results
-              YC_FUNCTION_RUNTIME: python311
+              YC_FUNCTION_RUNTIME: python312
               YC_FUNCTION_ENTRYPOINT: yc.results.handler
               SOURCE_PATH: "."
               PUBLIC: "true"
-              ENVIRONMENT: "BOT_TOKEN=${{ inputs.bot-token }},DATABASE_URL=${{ inputs.database-url }},ADMIN_ID=${{ inputs.admin-id }},REDIS_URL=${{ inputs.redis-url }},CRON_SECRET=${{ inputs.cron-secret }}"
+              ENVIRONMENT: "BOT_TOKEN=${{ inputs.bot-token }},DATABASE_URL=${{ inputs.database-url }},ADMIN_ID=${{ inputs.admin-id }},REDIS_URL=${{ inputs.redis-url }}"
             image: cr.yandex/sourcecraft/yc-function:latest
 
-          # 5. Регистрируем webhook у Telegram (нужен URL задеплоенной функции)
           - name: set-webhook
             env:
               TG_BOT_TOKEN: ${{ inputs.bot-token }}
               WEBHOOK_URL: ${{ cubes.deploy-webhook.outputs.invoke_url }}
             script:
               - |
-                if [ -n "$TG_BOT_TOKEN" ] && [ -n "$WEBHOOK_URL" ]; then
-                  echo "Setting Telegram webhook: $WEBHOOK_URL"
-                  curl --request POST \
-                    --url "https://api.telegram.org/bot${TG_BOT_TOKEN}/setWebhook?url=${WEBHOOK_URL}"
-                  echo ""
-                  echo "Webhook registered!"
-                fi
+                echo "Registering Telegram webhook: $WEBHOOK_URL"
+                curl --request POST \
+                  --url "https://api.telegram.org/bot${TG_BOT_TOKEN}/setWebhook?url=${WEBHOOK_URL}"
+                echo ""
+                echo "Done!"
 
-          # 6. Выводим итоговые URL
           - name: get-outputs
             script:
               - |
                 echo "=== Deploy complete ==="
-                echo "tg-webhook URL:  ${{ cubes.deploy-webhook.outputs.invoke_url }}"
-                echo "yc-payment URL:  ${{ cubes.deploy-payment.outputs.invoke_url }}"
-                echo "yc-reminders URL: ${{ cubes.deploy-reminders.outputs.invoke_url }}"
-                echo "yc-results URL:  ${{ cubes.deploy-results.outputs.invoke_url }}"
+                echo "tg-webhook:  ${{ cubes.deploy-webhook.outputs.invoke_url }}"
+                echo "yc-payment:  ${{ cubes.deploy-payment.outputs.invoke_url }}"
+                echo "yc-reminders: ${{ cubes.deploy-reminders.outputs.invoke_url }}"
+                echo "yc-results:  ${{ cubes.deploy-results.outputs.invoke_url }}"
             artifacts:
               paths:
                 - invoke_url.txt
