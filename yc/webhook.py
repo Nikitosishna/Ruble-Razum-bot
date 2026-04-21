@@ -9,27 +9,12 @@ import logging
 from aiogram.types import Update
 
 from bot_instance import bot, dp
-from services.db_service import init_db
-from services.forecast_service import seed_meeting_dates
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Флаг инициализации — выполняется один раз на "тёплый" экземпляр функции
-_initialized = False
-
-
-async def _init():
-    global _initialized
-    if not _initialized:
-        await init_db()
-        await seed_meeting_dates()
-        _initialized = True
-
 
 async def _handle(event: dict) -> dict:
-    await _init()
-
     body = event.get("body", "")
     if event.get("isBase64Encoded"):
         body = base64.b64decode(body).decode("utf-8")

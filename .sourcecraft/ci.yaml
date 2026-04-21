@@ -48,6 +48,8 @@ workflows:
               YC_FUNCTION_ENTRYPOINT: yc.webhook.handler
               SOURCE_PATH: "."
               PUBLIC: "true"
+              EXECUTION_TIMEOUT: "30s"
+              MEMORY: "256m"
               ENVIRONMENT: "BOT_TOKEN=${{ inputs.bot-token }},DATABASE_URL=${{ inputs.database-url }},YOOKASSA_SHOP_ID=${{ inputs.yookassa-shop-id }},YOOKASSA_SECRET_KEY=${{ inputs.yookassa-secret-key }},ADMIN_ID=${{ inputs.admin-id }},REDIS_URL=${{ inputs.redis-url }}"
             image: cr.yandex/sourcecraft/yc-function:latest
 
@@ -61,6 +63,8 @@ workflows:
               YC_FUNCTION_ENTRYPOINT: yc.payment.handler
               SOURCE_PATH: "."
               PUBLIC: "true"
+              EXECUTION_TIMEOUT: "30s"
+              MEMORY: "256m"
               ENVIRONMENT: "BOT_TOKEN=${{ inputs.bot-token }},DATABASE_URL=${{ inputs.database-url }},YOOKASSA_SHOP_ID=${{ inputs.yookassa-shop-id }},YOOKASSA_SECRET_KEY=${{ inputs.yookassa-secret-key }},ADMIN_ID=${{ inputs.admin-id }},REDIS_URL=${{ inputs.redis-url }}"
             image: cr.yandex/sourcecraft/yc-function:latest
 
