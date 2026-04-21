@@ -1,10 +1,13 @@
-#Основные обработчики сообщений и кнопок.
-# Основные обработчики сообщений и кнопок.
+# Обработчики сообщений и кнопок.
 
 from aiogram import Router
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import (
+    Message, CallbackQuery,
+    InlineKeyboardMarkup, InlineKeyboardButton,
+)
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import CommandStart, Command
+from sqlalchemy import select, desc
 
 from services.file_service import (
     get_privacy_policy_file,
@@ -13,19 +16,6 @@ from services.file_service import (
     get_what_can_bot_image_file,
 )
 from keyboards.reply import get_main_keyboard
-from utils.validators import is_valid_name, is_valid_email
-from services.db_service import create_user, get_user_by_telegram_id, create_payment_record
-from keyboards.inline import (
-    get_community_inline_keyboard,
-    get_currency_inline_keyboard,
-    get_guide_payment_inline_keyboard,
-    get_documents_inline_keyboard,
-)
-from services.payment_service import create_payment, get_payment_status
-from services.currency_service import get_fiat_rate, get_crypto_rate
-from services.key_rate_service import get_key_rate_text
-
-from states.registration import RegistrationState, ForecastState
 from keyboards.inline import (
     get_community_inline_keyboard,
     get_currency_inline_keyboard,
@@ -33,6 +23,12 @@ from keyboards.inline import (
     get_documents_inline_keyboard,
     get_key_rate_keyboard,
 )
+from utils.validators import is_valid_name, is_valid_email
+from utils.constants import MONTHS_RU
+from services.db_service import create_user, get_user_by_telegram_id, create_payment_record
+from services.payment_service import create_payment, get_payment_status
+from services.currency_service import get_fiat_rate, get_crypto_rate
+from services.key_rate_service import get_key_rate_text
 from services.forecast_service import (
     get_next_meeting,
     get_all_meetings,
@@ -49,6 +45,7 @@ from services.forecast_service import (
     get_user_stats,
     get_user_forecast_history,
 )
+from states.registration import RegistrationState, ForecastState
 from config import config
 
 router = Router()
@@ -134,7 +131,7 @@ async def process_email(message: Message, state: FSMContext) -> None:
             "Здесь можно:\n"
             "• Приобрести гайд по финансовой грамотности;\n"
             "• Посмотреть актуальные курсы валют;\n"
-            "• узнать стоимость BTC и ETH;\n"
+            "• Узнать стоимость BTC и ETH;\n"
             "• Узнать текущую ключевую ставку ЦБ РФ;\n"
             "• Поучаствовать в прогнозах ключевой ставки.\n\n"
             "Что вас интересует?"
@@ -162,7 +159,7 @@ async def what_can_bot_handler(message: Message) -> None:
                 "Здесь можно:\n"
                 "• Приобрести гайд по финансовой грамотности;\n"
                 "• Посмотреть актуальные курсы валют;\n"
-                "• узнать стоимость BTC и ETH;\n"
+                "• Узнать стоимость BTC и ETH;\n"
                 "• Узнать текущую ключевую ставку ЦБ РФ;\n"
                 "• Поучаствовать в прогнозах ключевой ставки.\n\n"
                 "Что вас интересует?"
@@ -199,12 +196,12 @@ async def community_handler(message: Message) -> None:
 async def guide_handler(message: Message) -> None:
     """
     Обработчик кнопки 'Купить гайд'.
-    Отправляет:
-    1. описание гайда + кнопку перехода к оплате
-    2. сообщение про согласие с офертой и политикой + кнопки документов
+    Отправляет два сообщения:
+    1. Краткое описание и аудитория гайда
+    2. Содержание, цена и кнопка перехода к оплате
     """
 
-    guide_text = (
+    part1 = (
         "<b>📚 Гайд по финансовой грамотности</b>\n\n"
         "Практический гайд по финансовой грамотности, который поможет разобраться "
         "в личных финансах, навести в них порядок и заложить понятную базу для "
@@ -213,7 +210,10 @@ async def guide_handler(message: Message) -> None:
         "🎯 Понять своё текущее финансовое положение;\n"
         "🎯 Выстроить финансовые цели;\n"
         "🎯 Сформировать полезные привычки;\n"
-        "🎯 Спокойнее относиться к накоплениям, кредитам и инвестициям.\n\n"
+        "🎯 Спокойнее относиться к накоплениям, кредитам и инвестициям."
+    )
+
+    part2 = (
         "Внутри раскрыты следующие темы:\n"
         "1. Что такое финансовая грамотность\n"
         "2. Как устроены отношения с деньгами\n"
@@ -226,13 +226,14 @@ async def guide_handler(message: Message) -> None:
         "9. Как выстроить финансовый план на несколько лет вперёд\n\n"
         "🌐 Бонусный раздел по криптовалютам: основы крипты и блокчейна,"
         " базовые виды активов, кошельки, риски и принципы безопасности\n\n"
-        "💰 Стоимость: <s>1490 ₽</s> 1099 ₽\n\n"
+        "💰 Стоимость: <s>1490 ₽</s> <b>1099 ₽</b>\n\n"
         "Без лишней теории и громких обещаний — база, которая поможет лучше понимать,"
         " как работают финансовые инструменты."
     )
 
+    await message.answer(text=part1, parse_mode="HTML")
     await message.answer(
-        text=guide_text,
+        text=part2,
         reply_markup=get_guide_payment_inline_keyboard(),
         parse_mode="HTML"
     )
@@ -273,13 +274,8 @@ async def key_rate_handler(message: Message) -> None:
 
     # Форматируем дату следующего заседания
     if next_meeting:
-        months = {
-            1: "января", 2: "февраля", 3: "марта", 4: "апреля",
-            5: "мая", 6: "июня", 7: "июля", 8: "августа",
-            9: "сентября", 10: "октября", 11: "ноября", 12: "декабря"
-        }
         d = next_meeting.meeting_date
-        meeting_str = f"{d.day} {months[d.month]} {d.year}"
+        meeting_str = f"{d.day} {MONTHS_RU[d.month]} {d.year}"
     else:
         meeting_str = "дата уточняется"
 
@@ -320,137 +316,46 @@ async def key_rate_handler(message: Message) -> None:
     await message.answer(text, reply_markup=keyboard, parse_mode="HTML")
 
 
-# Обработчики для кнопок курса валют:
-@router.callback_query(lambda callback: callback.data == "currency_usd")
-async def process_usd_callback(callback: CallbackQuery) -> None:
-    """
-    Обработчик кнопки курса доллара.
-    Получает актуальный курс USD и отправляет его в чат.
-    """
+# Универсальные обработчики курса валют
 
+FIAT_CURRENCY_MAP = {
+    "currency_usd": "USD",
+    "currency_eur": "EUR",
+    "currency_cny": "CNY",
+    "currency_aed": "AED",
+    "currency_try": "TRY",
+    "currency_gbp": "GBP",
+    "currency_gel": "GEL",
+    "currency_byn": "BYN",
+    "currency_kzt": "KZT",
+    "currency_chf": "CHF",
+}
+
+CRYPTO_CURRENCY_MAP = {
+    "currency_btc": "BTC",
+    "currency_eth": "ETH",
+}
+
+
+@router.callback_query(lambda c: c.data in FIAT_CURRENCY_MAP)
+async def process_fiat_callback(callback: CallbackQuery) -> None:
+    """Универсальный обработчик фиатных валют."""
+    code = FIAT_CURRENCY_MAP[callback.data]
     try:
-        rate_text = await get_fiat_rate("USD")
-        await callback.message.answer(rate_text)
+        rate_text = await get_fiat_rate(code)
+        await callback.message.answer(rate_text, reply_markup=get_main_keyboard())
     except Exception as e:
         await callback.message.answer(str(e))
     await callback.answer()
 
 
-@router.callback_query(lambda callback: callback.data == "currency_eur")
-async def process_eur_callback(callback: CallbackQuery) -> None:
-    """
-    Обработчик кнопки курса евро.
-    Получает актуальный курс EUR и отправляет его в чат.
-    """
-
+@router.callback_query(lambda c: c.data in CRYPTO_CURRENCY_MAP)
+async def process_crypto_callback(callback: CallbackQuery) -> None:
+    """Универсальный обработчик криптовалют."""
+    code = CRYPTO_CURRENCY_MAP[callback.data]
     try:
-        rate_text = await get_fiat_rate("EUR")
-        await callback.message.answer(rate_text)
-    except Exception as e:
-        await callback.message.answer(str(e))
-    await callback.answer()
-
-
-@router.callback_query(lambda callback: callback.data == "currency_cny")
-async def process_cny_callback(callback: CallbackQuery) -> None:
-    """
-    Обработчик кнопки курса юаня.
-    Получает актуальный курс CNY и отправляет его в чат.
-    """
-
-    try:
-        rate_text = await get_fiat_rate("CNY")
-        await callback.message.answer(rate_text)
-    except Exception as e:
-        await callback.message.answer(str(e))
-    await callback.answer()
-
-
-@router.callback_query(lambda callback: callback.data == "currency_aed")
-async def process_aed_callback(callback: CallbackQuery) -> None:
-    """
-    Обработчик кнопки курса дирхама.
-    Получает актуальный курс AED и отправляет его в чат.
-    """
-
-    try:
-        rate_text = await get_fiat_rate("AED")
-        await callback.message.answer(rate_text)
-    except Exception as e:
-        await callback.message.answer(str(e))
-    await callback.answer()
-
-
-@router.callback_query(lambda callback: callback.data == "currency_try")
-async def process_try_callback(callback: CallbackQuery) -> None:
-    """
-    Обработчик кнопки курса турецкой лиры.
-    Получает актуальный курс TRY и отправляет его в чат.
-    """
-
-    try:
-        rate_text = await get_fiat_rate("TRY")
-        await callback.message.answer(rate_text)
-    except Exception as e:
-        await callback.message.answer(str(e))
-    await callback.answer()
-
-
-@router.callback_query(lambda callback: callback.data == "currency_gbp")
-async def process_gbp_callback(callback: CallbackQuery) -> None:
-    """
-    Обработчик кнопки курса фунта стерлингов.
-    Получает актуальный курс GBP и отправляет его в чат.
-    """
-
-    try:
-        rate_text = await get_fiat_rate("GBP")
-        await callback.message.answer(rate_text)
-    except Exception as e:
-        await callback.message.answer(str(e))
-    await callback.answer()
-
-
-@router.callback_query(lambda callback: callback.data == "currency_gel")
-async def process_gel_callback(callback: CallbackQuery) -> None:
-    """
-    Обработчик кнопки курса грузинского лари.
-    Получает актуальный курс GEL и отправляет его в чат.
-    """
-
-    try:
-        rate_text = await get_fiat_rate("GEL")
-        await callback.message.answer(rate_text)
-    except Exception as e:
-        await callback.message.answer(str(e))
-    await callback.answer()
-
-
-@router.callback_query(lambda callback: callback.data == "currency_btc")
-async def process_btc_callback(callback: CallbackQuery) -> None:
-    """
-    Обработчик кнопки курса Bitcoin.
-    Получает актуальную цену BTC в долларах и рублях и отправляет её в чат.
-    """
-
-    try:
-        rate_text = await get_crypto_rate("BTC")
-        await callback.message.answer(rate_text)
-    except Exception as e:
-        await callback.message.answer(str(e))
-    await callback.answer()
-
-
-@router.callback_query(lambda callback: callback.data == "currency_eth")
-async def process_eth_callback(callback: CallbackQuery) -> None:
-    """
-    Обработчик кнопки курса Ethereum.
-    Получает актуальную цену ETH в долларах и рублях и отправляет её в чат.
-    """
-
-    try:
-        rate_text = await get_crypto_rate("ETH")
-        await callback.message.answer(rate_text)
+        rate_text = await get_crypto_rate(code)
+        await callback.message.answer(rate_text, reply_markup=get_main_keyboard())
     except Exception as e:
         await callback.message.answer(str(e))
     await callback.answer()
@@ -460,18 +365,16 @@ async def process_eth_callback(callback: CallbackQuery) -> None:
 async def buy_guide_callback(callback: CallbackQuery) -> None:
     """
     Обработчик кнопки 'Перейти к оплате'.
-    Создаёт платёж в ЮKassa и отправляет ссылку на оплату с кнопкой проверки статуса.
+    Создаёт платёж в ЮKassa и отправляет ссылку на оплату.
     """
-    try:
-        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    await callback.answer()  # Сразу убираем «загрузку» у кнопки
 
-        # Создаём платёж в ЮKassa (1099 рублей)
+    try:
         payment_data = await create_payment(
             amount=1099.00,
             description="Гайд по финансовой грамотности"
         )
 
-        # Сохраняем запись в базу данных
         await create_payment_record(
             telegram_user_id=callback.from_user.id,
             product_name="guide_financial_literacy",
@@ -480,15 +383,18 @@ async def buy_guide_callback(callback: CallbackQuery) -> None:
             status=payment_data["status"]
         )
 
-        # Отправляем пользователю ссылку на оплату
         confirmation_url = payment_data.get("confirmation_url")
         if confirmation_url:
+            pay_keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(text="💳 Оплатить", url=confirmation_url),
+                InlineKeyboardButton(text="✅ Проверить оплату", callback_data="check_payment_status"),
+            ]])
             await callback.message.answer(
                 text=(
                     "✅ <b>Платёж создан!</b>\n\n"
-                    f"🔗 <a href='{confirmation_url}'>Перейти к оплате</a>\n\n"
-                    "После оплаты гайд придёт в этот чат автоматически."
+                    "После оплаты нажми «Проверить оплату» — гайд придёт автоматически."
                 ),
+                reply_markup=pay_keyboard,
                 parse_mode="HTML"
             )
         else:
@@ -496,8 +402,6 @@ async def buy_guide_callback(callback: CallbackQuery) -> None:
 
     except Exception as e:
         await callback.message.answer(f"❌ Ошибка: {str(e)}")
-
-    await callback.answer()
 
 @router.callback_query(lambda callback: callback.data == "open_privacy_policy")
 async def open_privacy_policy_callback(callback: CallbackQuery) -> None:
@@ -536,7 +440,6 @@ async def check_payment_status_callback(callback: CallbackQuery) -> None:
     Если оплачен — отправляет PDF гайда.
     """
     try:
-        from sqlalchemy import select, desc
         from models.payment import Payment
         from database import SessionLocal
 
@@ -644,7 +547,6 @@ async def process_forecast(message: Message, state: FSMContext) -> None:
 
     subscribed = await is_user_subscribed(message.from_user.id)
 
-    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     buttons = [[
         InlineKeyboardButton(text="✏️ Изменить прогноз", callback_data="change_forecast")
     ]]
@@ -683,7 +585,7 @@ async def update_dates_handler(message: Message) -> None:
         )
         return
 
-    from datetime import datetime
+    from datetime import datetime  # noqa: PLC0415
     parsed = []
     errors = []
 
@@ -720,18 +622,12 @@ async def list_dates_handler(message: Message) -> None:
     if message.from_user.id != config.ADMIN_ID:
         return
 
-    from datetime import datetime
+    from datetime import datetime  # noqa: PLC0415
     meetings = await get_all_meetings()
 
     if not meetings:
         await message.answer("📭 В базе данных нет ни одной даты заседания.")
         return
-
-    months = {
-        1: "января", 2: "февраля", 3: "марта", 4: "апреля",
-        5: "мая", 6: "июня", 7: "июля", 8: "августа",
-        9: "сентября", 10: "октября", 11: "ноября", 12: "декабря"
-    }
 
     now = datetime.utcnow()
     lines = []
@@ -743,7 +639,7 @@ async def list_dates_handler(message: Message) -> None:
             current_year = d.year
             lines.append(f"\n<b>— {d.year} —</b>")
         icon = "✅" if d < now else "🕐"
-        lines.append(f"{icon} {d.day} {months[d.month]}")
+        lines.append(f"{icon} {d.day} {MONTHS_RU[d.month]}")
 
     text = f"📅 <b>Все даты заседаний ЦБ в базе ({len(meetings)} шт.):</b>\n" + "\n".join(lines)
     await message.answer(text, parse_mode="HTML")
@@ -769,12 +665,6 @@ async def my_stats_callback(callback: CallbackQuery) -> None:
     history = await get_user_forecast_history(callback.from_user.id)
     correct_count, total_count = await get_user_stats(callback.from_user.id)
 
-    months = {
-        1: "января", 2: "февраля", 3: "марта", 4: "апреля",
-        5: "мая", 6: "июня", 7: "июля", 8: "августа",
-        9: "сентября", 10: "октября", 11: "ноября", 12: "декабря"
-    }
-
     if not history:
         await callback.message.answer("У вас пока нет завершённых прогнозов за этот год.")
         await callback.answer()
@@ -783,7 +673,7 @@ async def my_stats_callback(callback: CallbackQuery) -> None:
     lines = []
     for entry in history:
         d = entry["date"]
-        date_str = f"{d.day} {months[d.month]}"
+        date_str = f"{d.day} {MONTHS_RU[d.month]}"
         icon = "✅" if entry["is_correct"] else "❌"
         actual = entry["actual_rate"]
         actual_str = f"{int(actual)}%" if actual == int(actual) else f"{actual:.1f}%".replace(".", ",")
@@ -811,8 +701,8 @@ async def set_rate_handler(message: Message) -> None:
     if message.from_user.id != config.ADMIN_ID:
         return
 
-    from datetime import datetime, timedelta
-    from services.scheduler_service import _format_rate
+    from datetime import datetime, timedelta  # noqa: PLC0415
+    from services.scheduler_service import _format_rate  # noqa: PLC0415
 
     args = message.text.strip().split()[1:]
     if len(args) != 2:
@@ -834,9 +724,8 @@ async def set_rate_handler(message: Message) -> None:
         return
 
     # Ищем заседание по дате ±1 день
-    from sqlalchemy import select
-    from models.forecast import CBRMeeting
-    from database import SessionLocal
+    from models.forecast import CBRMeeting  # noqa: PLC0415
+    from database import SessionLocal  # noqa: PLC0415
 
     window_start = target_date - timedelta(days=1)
     window_end = target_date + timedelta(days=1)

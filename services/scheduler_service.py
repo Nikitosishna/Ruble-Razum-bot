@@ -19,14 +19,9 @@ from services.forecast_service import (
     get_user_stats,
 )
 from services.key_rate_service import fetch_key_rate
+from utils.constants import MONTHS_RU
 
 MSK = timezone(timedelta(hours=3))
-
-MONTHS = {
-    1: "января", 2: "февраля", 3: "марта", 4: "апреля",
-    5: "мая", 6: "июня", 7: "июля", 8: "августа",
-    9: "сентября", 10: "октября", 11: "ноября", 12: "декабря"
-}
 
 
 def _parse_rate_str(rate_str: str) -> float:
@@ -63,7 +58,7 @@ async def send_forecast_reminders(bot: Bot) -> None:
     if days_left not in (1, 2):
         return
 
-    meeting_str = f"{meeting.meeting_date.day} {MONTHS[meeting.meeting_date.month]}"
+    meeting_str = f"{meeting.meeting_date.day} {MONTHS_RU[meeting.meeting_date.month]}"
     days_word = "2 дня" if days_left == 2 else "1 день"
 
     subscribers = await get_all_subscribers()
