@@ -293,15 +293,15 @@ async def key_rate_handler(message: Message) -> None:
     if user_forecast:
         text = (
             f"🔑 {rate_text}\n\n"
-            f"📅 Следующее заседание — <b>{meeting_str}</b>.\n\n"
+            f"Следующее заседание — <b>{meeting_str}</b>.\n\n"
             f"✅ Ваш прогноз на ближайшее заседание сохранён: "
             f"<b>{user_forecast.forecast_raw}</b>"
         )
     else:
         text = (
             f"🔑 {rate_text}\n\n"
-            f"📅 Следующее заседание — <b>{meeting_str}</b>.\n\n"
-            f"🎯 Хотите сделать прогноз по следующему решению?"
+            f"Следующее заседание — <b>{meeting_str}</b>.\n\n"
+            f"Хотите сделать прогноз по следующему решению?"
         )
 
     keyboard = get_key_rate_keyboard(
@@ -505,8 +505,8 @@ async def start_forecast_callback(callback: CallbackQuery, state: FSMContext) ->
 
     await callback.message.answer(
         "Какую ключевую ставку установит Банк России по итогам ближайшего заседания?\n\n"
-        "Отправьте ответ в формате: <code>14</code>, <code>14.5</code>, "
-        "<code>14,5</code> или <code>14%</code>",
+        "Отправьте ответ в формате: <code>5</code>, <code>5.5</code>, "
+        "<code>5,5</code> или <code>5%</code>",
         parse_mode="HTML"
     )
     await state.set_state(ForecastState.waiting_for_forecast)
@@ -550,14 +550,15 @@ async def process_forecast(message: Message, state: FSMContext) -> None:
 
     subscribed = await is_user_subscribed(message.from_user.id)
 
-    buttons = [[
-        InlineKeyboardButton(text="✏️ Изменить прогноз", callback_data="change_forecast")
-    ]]
+    buttons = []
     if not subscribed:
         buttons.append([InlineKeyboardButton(
             text="🔔 Напомнить перед следующим заседанием",
             callback_data="subscribe_forecast"
         )])
+    buttons.append([
+        InlineKeyboardButton(text="🖍️ Изменить прогноз", callback_data="change_forecast")
+    ])
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
 
     await message.answer(
@@ -653,10 +654,14 @@ async def subscribe_forecast_callback(callback: CallbackQuery) -> None:
     """
     Подписывает пользователя на напоминания о прогнозах.
     """
-    await subscribe_user(callback.from_user.id)
-    await callback.message.answer(
-        "🔔 Напоминание о прогнозе перед следующим заседанием включено."
-    )
+    already = await is_user_subscribed(callback.from_user.id)
+    if already:
+        await callback.message.answer("Вы уже включили напоминание!")
+    else:
+        await subscribe_user(callback.from_user.id)
+        await callback.message.answer(
+            "Напоминание о прогнозе перед следующим заседанием включено."
+        )
     await callback.answer()
 
 

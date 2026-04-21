@@ -108,19 +108,18 @@ def get_key_rate_keyboard(
 
     if has_forecast:
         buttons.append([InlineKeyboardButton(
-            text="✏️ Изменить прогноз",
+            text="🖍️ Изменить прогноз",
             callback_data="change_forecast"
         )])
+        if not is_subscribed:
+            buttons.append([InlineKeyboardButton(
+                text="🔔 Напомнить о следующем прогнозе",
+                callback_data="subscribe_forecast"
+            )])
     else:
         buttons.append([InlineKeyboardButton(
             text="🎯 Сделать прогноз",
             callback_data="make_forecast"
-        )])
-
-    if not is_subscribed:
-        buttons.append([InlineKeyboardButton(
-            text="🔔 Напомнить о следующем прогнозе",
-            callback_data="subscribe_forecast"
         )])
 
     if has_history:
