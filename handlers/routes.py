@@ -26,7 +26,7 @@ from keyboards.inline import (
 )
 from utils.validators import is_valid_name, is_valid_email
 from utils.constants import MONTHS_RU
-from services.db_service import create_user, get_user_by_telegram_id, create_payment_record
+from services.db_service import create_user, get_user_by_telegram_id, create_payment_record, get_succeeded_guide_payment
 from services.payment_service import create_payment, get_payment_status
 from services.currency_service import get_fiat_rate, get_crypto_rate
 from services.key_rate_service import get_key_rate_text
@@ -365,6 +365,16 @@ async def buy_guide_callback(callback: CallbackQuery) -> None:
     Создаёт платёж в ЮKassa и отправляет ссылку на оплату.
     """
     await callback.answer()  # Сразу убираем «загрузку» у кнопки
+
+    # Проверяем, не покупал ли пользователь гайд ранее
+    existing = await get_succeeded_guide_payment(callback.from_user.id)
+    if existing:
+        await callback.message.answer(
+            "📚 Вы уже приобретали этот гайд ранее. Отправляю его повторно!"
+        )
+        guide_file = get_guide_file()
+        await callback.message.answer_document(guide_file)
+        return
 
     try:
         payment_data = await create_payment(
@@ -777,7 +787,7 @@ async def set_rate_handler(message: Message) -> None:
             )
 
         try:
-            await message.bot.send_message(chat_id=forecast.telegram_user_id, text=text)
+            await message.bot.send_message(chat_id=forecast.telegram_user_id, text=text, parse_mode="HTML")
             sent += 1
         except Exception as e:
             print(f"[set_rate] Не удалось отправить итог {forecast.telegram_user_id}: {repr(e)}")

@@ -81,4 +81,4 @@ async def fetch_key_rate() -> str:
 
 async def get_key_rate_text() -> str:
     rate = await fetch_key_rate()
-    return f"Текущая ключевая ставка — {rate}%"
+    return f"Текущая ключевая ставка — <b>{rate}</b>%"

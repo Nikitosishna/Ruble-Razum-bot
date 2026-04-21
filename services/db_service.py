@@ -86,6 +86,22 @@ async def get_payment_by_payment_id(payment_id: str) -> Payment | None:
         return result.scalar_one_or_none()
 
 
+async def get_succeeded_guide_payment(telegram_user_id: int) -> Payment | None:
+    """
+    Проверяет, есть ли у пользователя успешно оплаченный гайд.
+    Используется перед созданием нового платежа чтобы не брать деньги повторно.
+    """
+    async with SessionLocal() as session:
+        result = await session.execute(
+            select(Payment).where(
+                Payment.telegram_user_id == telegram_user_id,
+                Payment.product_name == "guide_financial_literacy",
+                Payment.status == "succeeded"
+            ).limit(1)
+        )
+        return result.scalar_one_or_none()
+
+
 async def update_payment_status(payment_id: str, status: str) -> None:
     """
     Обновляет статус платежа в БД.

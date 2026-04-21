@@ -30,10 +30,10 @@ def _parse_rate_str(rate_str: str) -> float:
 
 
 def _format_rate(value: float) -> str:
-    """Форматирует float-ставку для отображения: 21.0 → '21%', 21.5 → '21,5%'."""
+    """Форматирует float-ставку для отображения: 21.0 → '<b>21</b>%', 21.5 → '<b>21,5</b>%'."""
     if value == int(value):
-        return f"{int(value)}%"
-    return f"{value:.1f}%".replace(".", ",")
+        return f"<b>{int(value)}</b>%"
+    return f"<b>{value:.1f}</b>%".replace(".", ",")
 
 
 async def send_forecast_reminders(bot: Bot) -> None:
@@ -145,7 +145,8 @@ async def send_meeting_results(bot: Bot) -> None:
             try:
                 await bot.send_message(
                     chat_id=forecast.telegram_user_id,
-                    text=text
+                    text=text,
+                    parse_mode="HTML"
                 )
             except Exception as e:
                 print(f"[Scheduler] Не удалось отправить итог {forecast.telegram_user_id}: {repr(e)}")
