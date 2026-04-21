@@ -18,7 +18,7 @@ from services.forecast_service import (
     mark_forecast_correct,
     get_user_stats,
 )
-from services.key_rate_service import fetch_key_rate
+from services.key_rate_service import fetch_key_rate, invalidate_rate_cache
 from utils.constants import MONTHS_RU
 
 MSK = timezone(timedelta(hours=3))
@@ -114,6 +114,7 @@ async def send_meeting_results(bot: Bot) -> None:
             continue
 
         await set_meeting_actual_rate(meeting.id, actual_rate)
+        await invalidate_rate_cache()  # сбрасываем кэш — ставка изменилась
         rate_display = _format_rate(actual_rate)
 
         forecasts = await get_all_forecasts_for_meeting(meeting.id)

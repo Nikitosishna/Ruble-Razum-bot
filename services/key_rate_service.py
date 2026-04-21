@@ -6,8 +6,27 @@ from datetime import datetime, timedelta
 from zeep import Client
 from zeep.transports import Transport
 
+from config import config
 
 WSDL_URL = "https://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL"
+
+CACHE_KEY = "cbr_key_rate"
+CACHE_TTL = 2 * 3600  # 2 часа
+
+
+async def _get_redis():
+    """Возвращает Redis-клиент если REDIS_URL задан, иначе None (локальный запуск)."""
+    if not config.REDIS_URL:
+        return None
+    import redis.asyncio as aioredis
+    return aioredis.from_url(config.REDIS_URL)
+
+
+async def invalidate_rate_cache() -> None:
+    """Сбрасывает кэш ключевой ставки. Вызывается после рассылки итогов заседания."""
+    redis = await _get_redis()
+    if redis:
+        await redis.delete(CACHE_KEY)
 
 # Кэш клиента zeep — создаётся один раз, переиспользуется в рамках одного экземпляра функции
 _cbr_client = None
@@ -80,5 +99,20 @@ async def fetch_key_rate() -> str:
 
 
 async def get_key_rate_text() -> str:
+    redis = await _get_redis()
+
+    # Проверяем кэш
+    if redis:
+        cached = await redis.get(CACHE_KEY)
+        if cached:
+            rate = cached.decode()
+            return f"Текущая ключевая ставка — <b>{rate}</b>%"
+
+    # Кэша нет — идём к ЦБ
     rate = await fetch_key_rate()
+
+    # Сохраняем в Redis на 2 часа
+    if redis:
+        await redis.set(CACHE_KEY, rate, ex=CACHE_TTL)
+
     return f"Текущая ключевая ставка — <b>{rate}</b>%"
