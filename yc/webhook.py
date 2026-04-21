@@ -13,6 +13,9 @@ from bot_instance import bot, dp
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(_loop)
+
 
 async def _handle(event: dict) -> dict:
     body = event.get("body", "")
@@ -31,4 +34,4 @@ async def _handle(event: dict) -> dict:
 
 def handler(event, context):
     """Точка входа для Yandex Cloud Functions."""
-    return asyncio.run(_handle(event))
+    return _loop.run_until_complete(_handle(event))

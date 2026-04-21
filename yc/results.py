@@ -4,6 +4,9 @@
 import asyncio
 import logging
 
+_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(_loop)
+
 from bot_instance import bot
 from config import config
 from services.scheduler_service import send_meeting_results
@@ -29,4 +32,4 @@ async def _handle(event: dict) -> dict:
 
 def handler(event, context):
     """Точка входа для Yandex Cloud Functions."""
-    return asyncio.run(_handle(event))
+    return _loop.run_until_complete(_handle(event))
