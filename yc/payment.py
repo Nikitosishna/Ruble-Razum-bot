@@ -12,7 +12,7 @@ asyncio.set_event_loop(_loop)
 from bot_instance import bot
 from services.payment_service import get_payment_status
 from services.db_service import get_payment_by_payment_id, update_payment_status
-from services.file_service import get_offer_file
+from services.file_service import get_guide_file
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ async def _handle(event: dict) -> dict:
                 "управлению своими финансами."
             )
         )
-        guide_file = get_offer_file()
+        guide_file = get_guide_file()
         await bot.send_document(
             chat_id=payment_record.telegram_user_id,
             document=guide_file

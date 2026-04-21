@@ -12,6 +12,7 @@ from sqlalchemy import select, desc
 from services.file_service import (
     get_privacy_policy_file,
     get_offer_file,
+    get_guide_file,
     get_community_image_file,
     get_what_can_bot_image_file,
 )
@@ -462,7 +463,7 @@ async def check_payment_status_callback(callback: CallbackQuery) -> None:
                 "Поздравляю — вы сделали первый шаг к более осознанному управлению своими финансами."
 
             )
-            guide_file = get_offer_file()  # ← здесь потом заменишь на файл гайда
+            guide_file = get_guide_file()
             await callback.message.answer_document(guide_file)
 
         elif status == "pending":
