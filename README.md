@@ -194,7 +194,67 @@ Sourcecraft автоматически запускает пайплайн из 
 
 ---
 
-## Деплой: Вариант 2 — Локальный запуск (polling)
+## Деплой: Вариант 2 — Vercel + Supabase + Upstash (международные сервисы)
+
+Архитектурно идентичен Варианту 1, но на общедоступных западных платформах. Подходит, если нет доступа к Yandex Cloud или нужна глобальная инфраструктура.
+
+| Компонент | Вариант 1 (RU) | Вариант 2 (INT) |
+|-----------|---------------|-----------------|
+| Serverless-функции | Yandex Cloud Functions | Vercel Serverless Functions |
+| Cron-задачи | Yandex Cloud Scheduler | Vercel Cron Jobs |
+| CI/CD | Sourcecraft | Vercel Git Integration (GitHub) |
+| PostgreSQL | Supabase | Supabase (то же самое) |
+| Redis | Upstash | Upstash (то же самое) |
+
+### Подготовка (один раз)
+
+1. Зарегистрироваться на [vercel.com](https://vercel.com), подключить GitHub-репозиторий
+2. Добавить `vercel.json` в корень проекта с маршрутизацией функций:
+
+```json
+{
+  "functions": {
+    "yc/webhook.py":  { "memory": 512 },
+    "yc/payment.py":  { "memory": 512 },
+    "yc/reminders.py": { "memory": 256 },
+    "yc/results.py":   { "memory": 256 }
+  },
+  "routes": [
+    { "src": "/webhook",  "dest": "yc/webhook.py"  },
+    { "src": "/payment",  "dest": "yc/payment.py"  },
+    { "src": "/reminders","dest": "yc/reminders.py" },
+    { "src": "/results",  "dest": "yc/results.py"   }
+  ],
+  "crons": [
+    { "path": "/reminders", "schedule": "0 7 * * *"  },
+    { "path": "/results",   "schedule": "30 10 * * *" }
+  ]
+}
+```
+
+3. В настройках проекта на Vercel добавить все переменные окружения из `.env.example`
+
+### Деплой
+
+```bash
+git push
+```
+
+Vercel автоматически подхватывает пуш в GitHub и деплоит функции.
+
+### Webhook и ЮKassa
+
+После первого деплоя зарегистрировать webhook у Telegram:
+
+```
+https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://YOUR_PROJECT.vercel.app/webhook&drop_pending_updates=true
+```
+
+В настройках ЮKassa указать `https://YOUR_PROJECT.vercel.app/payment` для уведомлений об оплате.
+
+---
+
+## Деплой: Вариант 3 — Локальный запуск (polling)
 
 Для разработки и тестирования бот запускается локально через long polling — без webhook и без Redis:
 
