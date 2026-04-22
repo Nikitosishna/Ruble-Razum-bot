@@ -96,7 +96,7 @@ async def list_dates_handler(message: Message) -> None:
         icon = "✅" if d < now else "🕐"
         lines.append(f"{icon} {d.day} {MONTHS_RU[d.month]}")
 
-    text = f"📅 <b>Все даты заседаний ЦБ в базе ({len(meetings)} шт.):</b>\n" + "\n".join(lines)
+    text = f"<b>Все даты заседаний ЦБ в базе ({len(meetings)} шт.):</b>\n" + "\n".join(lines)
     await message.answer(text, parse_mode="HTML")
 
 

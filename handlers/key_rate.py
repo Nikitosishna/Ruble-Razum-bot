@@ -13,7 +13,6 @@ from services.forecast_service import (
     _check_window_open,
     get_user_forecast,
     is_user_subscribed,
-    get_user_forecast_history,
 )
 from utils.constants import MONTHS_RU
 
@@ -53,11 +52,10 @@ async def key_rate_handler(message: Message) -> None:
         )
         return
 
-    # Окно открыто — параллельно запрашиваем прогноз, подписку и историю
-    user_forecast, subscribed, history = await asyncio.gather(
+    # Окно открыто — параллельно запрашиваем прогноз и подписку
+    user_forecast, subscribed = await asyncio.gather(
         get_user_forecast(message.from_user.id, next_meeting.id),
         is_user_subscribed(message.from_user.id),
-        get_user_forecast_history(message.from_user.id),
     )
 
     if user_forecast:
@@ -77,6 +75,5 @@ async def key_rate_handler(message: Message) -> None:
     keyboard = get_key_rate_keyboard(
         has_forecast=user_forecast is not None,
         is_subscribed=subscribed,
-        has_history=len(history) > 0
     )
     await message.answer(text, reply_markup=keyboard, parse_mode="HTML")

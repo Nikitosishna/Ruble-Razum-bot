@@ -13,11 +13,8 @@ from services.forecast_service import (
     normalize_forecast,
     is_user_subscribed,
     subscribe_user,
-    get_user_stats,
-    get_user_forecast_history,
 )
 from states.registration import ForecastState
-from utils.constants import MONTHS_RU
 
 router = Router()
 
@@ -82,7 +79,7 @@ async def process_forecast(message: Message, state: FSMContext) -> None:
     buttons = []
     if not subscribed:
         buttons.append([InlineKeyboardButton(
-            text="🔔 Напомнить перед следующим заседанием",
+            text="Напомнить о следующим заседании",
             callback_data="subscribe_forecast"
         )])
     buttons.append([
@@ -111,39 +108,3 @@ async def subscribe_forecast_callback(callback: CallbackQuery) -> None:
     await callback.answer()
 
 
-@router.callback_query(lambda c: c.data == "my_stats")
-async def my_stats_callback(callback: CallbackQuery) -> None:
-    """Показывает статистику прогнозов пользователя за текущий год."""
-    history = await get_user_forecast_history(callback.from_user.id)
-    correct_count, total_count = await get_user_stats(callback.from_user.id)
-
-    if not history:
-        await callback.message.answer("У вас пока нет завершённых прогнозов за этот год.")
-        await callback.answer()
-        return
-
-    lines = []
-    for entry in history:
-        d = entry["date"]
-        date_str = f"{d.day} {MONTHS_RU[d.month]}"
-        icon = "✅" if entry["is_correct"] else "❌"
-        actual = entry["actual_rate"]
-        actual_str = (
-            f"{int(actual)}%"
-            if actual == int(actual)
-            else f"{actual:.1f}%".replace(".", ",")
-        )
-        lines.append(
-            f"{icon} {date_str} — ваш прогноз: "
-            f"<b>{entry['forecast_raw'].rstrip('%')}%</b>, "
-            f"решение: <b>{actual_str}</b>"
-        )
-
-    text = (
-        f"📊 <b>Ваша статистика за {history[0]['date'].year} год</b>\n\n"
-        + "\n".join(lines)
-        + f"\n\n<b>Итог: {correct_count}/{total_count} верных прогнозов</b>"
-    )
-
-    await callback.message.answer(text, parse_mode="HTML")
-    await callback.answer()
