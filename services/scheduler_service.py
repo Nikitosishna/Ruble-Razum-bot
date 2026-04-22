@@ -20,6 +20,7 @@ from services.forecast_service import (
 )
 from services.key_rate_service import fetch_key_rate, invalidate_rate_cache
 from utils.constants import MONTHS_RU
+from utils.formatters import format_rate_html
 
 MSK = timezone(timedelta(hours=3))
 
@@ -28,16 +29,6 @@ def _parse_rate_str(rate_str: str) -> float:
     """Преобразует строку ЦБ вида '21,0' или '21.0' в float."""
     return float(rate_str.replace(",", ".").replace("%", "").strip())
 
-
-def _format_rate(value: float) -> str:
-    """
-    Форматирует float-ставку для отображения с жирным числом.
-    21.0 → '<b>21</b>%', 21.5 → '<b>21,5</b>%', 7.75 → '<b>7,75</b>%'
-    """
-    if value == int(value):
-        return f"<b>{int(value)}</b>%"
-    formatted = f"{value:.2f}".rstrip("0").replace(".", ",")
-    return f"<b>{formatted}</b>%"
 
 
 async def send_forecast_reminders(bot: Bot) -> None:
@@ -119,7 +110,7 @@ async def send_meeting_results(bot: Bot) -> None:
 
         await set_meeting_actual_rate(meeting.id, actual_rate)
         await invalidate_rate_cache()  # сбрасываем кэш — ставка изменилась
-        rate_display = _format_rate(actual_rate)
+        rate_display = format_rate_html(actual_rate)
 
         forecasts = await get_all_forecasts_for_meeting(meeting.id)
         if not forecasts:

@@ -15,3 +15,6 @@ __pycache__/
 
 # Claude
 .claude/
+
+# Платные файлы — не публиковать в открытый репозиторий
+files/temporary_file.pdf
