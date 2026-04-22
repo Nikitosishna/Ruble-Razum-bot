@@ -98,6 +98,19 @@ async def fetch_key_rate() -> str:
             await asyncio.sleep(1)
 
 
+def _format_rate_display(rate_str: str) -> str:
+    """
+    Форматирует строку ставки для отображения.
+    '21,0' → '21', '21,5' → '21,5', '7,75' → '7,75'
+    """
+    value = float(rate_str.replace(",", "."))
+    if value == int(value):
+        return str(int(value))
+    # Убираем незначимые нули: 21.50 → '21,5', 7.75 → '7,75'
+    formatted = f"{value:.2f}".rstrip("0")
+    return formatted.replace(".", ",")
+
+
 async def get_key_rate_text() -> str:
     redis = await _get_redis()
 
@@ -109,9 +122,10 @@ async def get_key_rate_text() -> str:
             return f"Текущая ключевая ставка — <b>{rate}</b>%"
 
     # Кэша нет — идём к ЦБ
-    rate = await fetch_key_rate()
+    raw_rate = await fetch_key_rate()
+    rate = _format_rate_display(raw_rate)
 
-    # Сохраняем в Redis на 2 часа
+    # Сохраняем отформатированное значение в Redis на 2 часа
     if redis:
         await redis.set(CACHE_KEY, rate, ex=CACHE_TTL)
 

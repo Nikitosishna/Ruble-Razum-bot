@@ -9,7 +9,7 @@ import httpx
 CBR_DAILY_URL = "https://www.cbr.ru/scripts/XML_daily.asp"
 BINANCE_TICKER_URL = "https://api.binance.com/api/v3/ticker/price"
 
-FIAT_CODES = {"USD", "EUR", "CNY", "AED", "TRY", "GBP", "GEL", "BYN", "KZT", "CHF"}
+FIAT_CODES = {"USD", "EUR", "CNY", "AED", "TRY", "GBP", "GEL", "BYN", "CHF"}
 
 
 async def fetch_cbr_rates() -> dict[str, dict]:
@@ -96,7 +96,6 @@ async def get_fiat_rate(char_code: str) -> str:
         "GBP": "Фунт стерлингов 🇬🇧",
         "GEL": "Грузинский лари 🇬🇪",
         "BYN": "Белорусский рубль 🇧🇾",
-        "KZT": "Казахстанский тенге 🇰🇿",
         "CHF": "Швейцарский франк 🇨🇭",
     }
 

@@ -41,7 +41,6 @@ def get_currency_inline_keyboard() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="£ Фунт стерлингов 🇬🇧", callback_data="currency_gbp")],
             [InlineKeyboardButton(text="₾ Грузинский лари 🇬🇪", callback_data="currency_gel")],
             [InlineKeyboardButton(text="Б̶ Белорусский рубль 🇧🇾", callback_data="currency_byn")],
-            [InlineKeyboardButton(text="₸ Казахстанский тенге 🇰🇿", callback_data="currency_kzt")],
             [InlineKeyboardButton(text="₣ Швейцарский франк 🇨🇭", callback_data="currency_chf")],
             [InlineKeyboardButton(text="Bitcoin 🌐", callback_data="currency_btc")],
             [InlineKeyboardButton(text="Ethereum 💠", callback_data="currency_eth")],
@@ -108,7 +107,7 @@ def get_key_rate_keyboard(
 
     if has_forecast:
         buttons.append([InlineKeyboardButton(
-            text="🖍️ Изменить прогноз",
+            text="Изменить прогноз",
             callback_data="change_forecast"
         )])
         if not is_subscribed:

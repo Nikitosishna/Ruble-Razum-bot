@@ -30,10 +30,14 @@ def _parse_rate_str(rate_str: str) -> float:
 
 
 def _format_rate(value: float) -> str:
-    """Форматирует float-ставку для отображения: 21.0 → '<b>21</b>%', 21.5 → '<b>21,5</b>%'."""
+    """
+    Форматирует float-ставку для отображения с жирным числом.
+    21.0 → '<b>21</b>%', 21.5 → '<b>21,5</b>%', 7.75 → '<b>7,75</b>%'
+    """
     if value == int(value):
         return f"<b>{int(value)}</b>%"
-    return f"<b>{value:.1f}</b>%".replace(".", ",")
+    formatted = f"{value:.2f}".rstrip("0").replace(".", ",")
+    return f"<b>{formatted}</b>%"
 
 
 async def send_forecast_reminders(bot: Bot) -> None:

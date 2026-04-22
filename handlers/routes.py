@@ -225,7 +225,7 @@ async def guide_handler(message: Message) -> None:
         "9. Как выстроить финансовый план на несколько лет вперёд\n\n"
         "🌐 Бонусный раздел по криптовалютам: основы крипты и блокчейна,"
         " базовые виды активов, кошельки, риски и принципы безопасности\n\n"
-        "💰 Стоимость: <s>1490 ₽</s> <b>1099 ₽</b>\n\n"
+        "💰 Стоимость: <s>1490₽</s> <b>990₽</b>\n\n"
         "Без лишней теории и громких обещаний — база, которая поможет лучше понимать,"
         " как работают финансовые инструменты."
     )
@@ -301,7 +301,7 @@ async def key_rate_handler(message: Message) -> None:
             f"🔑 {rate_text}\n\n"
             f"Следующее заседание — <b>{meeting_str}</b>.\n\n"
             f"✅ Ваш прогноз на ближайшее заседание сохранён: "
-            f"<b>{user_forecast.forecast_raw}</b>"
+            f"<b>{user_forecast.forecast_raw.rstrip('%')}%</b>"
         )
     else:
         text = (
@@ -330,7 +330,6 @@ FIAT_CURRENCY_MAP = {
     "currency_gbp": "GBP",
     "currency_gel": "GEL",
     "currency_byn": "BYN",
-    "currency_kzt": "KZT",
     "currency_chf": "CHF",
 }
 
@@ -511,8 +510,8 @@ async def start_forecast_callback(callback: CallbackQuery, state: FSMContext) ->
 
     await callback.message.answer(
         "Какую ключевую ставку установит Банк России по итогам ближайшего заседания?\n\n"
-        "Отправьте ответ в формате: <code>5</code>, <code>5.5</code>, "
-        "<code>5,5</code> или <code>5%</code>",
+        "Отправьте ответ в формате:\n"
+        "<code>4</code> / <code>4,5</code> / <code>4.5</code> / <code>4%</code>",
         parse_mode="HTML"
     )
     await state.set_state(ForecastState.waiting_for_forecast)
@@ -563,12 +562,12 @@ async def process_forecast(message: Message, state: FSMContext) -> None:
             callback_data="subscribe_forecast"
         )])
     buttons.append([
-        InlineKeyboardButton(text="🖍️ Изменить прогноз", callback_data="change_forecast")
+        InlineKeyboardButton(text="Изменить прогноз", callback_data="change_forecast")
     ])
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
 
     await message.answer(
-        f"✅ Ваш прогноз принят: <b>{raw}</b>",
+        f"✅ Ваш прогноз принят: <b>{raw.rstrip('%')}%</b>",
         reply_markup=keyboard,
         parse_mode="HTML"
     )
@@ -691,7 +690,7 @@ async def my_stats_callback(callback: CallbackQuery) -> None:
         icon = "✅" if entry["is_correct"] else "❌"
         actual = entry["actual_rate"]
         actual_str = f"{int(actual)}%" if actual == int(actual) else f"{actual:.1f}%".replace(".", ",")
-        lines.append(f"{icon} {date_str} — ваш прогноз: <b>{entry['forecast_raw']}</b>, решение: <b>{actual_str}</b>")
+        lines.append(f"{icon} {date_str} — ваш прогноз: <b>{entry['forecast_raw'].rstrip('%')}%</b>, решение: <b>{actual_str}</b>")
 
     text = (
         f"📊 <b>Ваша статистика за {history[0]['date'].year} год</b>\n\n"
