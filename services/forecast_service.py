@@ -242,6 +242,22 @@ async def set_meeting_actual_rate(meeting_id: int, actual_rate: float) -> None:
             await session.commit()
 
 
+async def get_latest_confirmed_rate() -> float | None:
+    """
+    Возвращает actual_rate последнего состоявшегося заседания ЦБ (или None).
+    Используется в key_rate_service для сверки с ответом CBR API после устаревания кэша:
+    если CBR ещё не обновился — показываем подтверждённую ставку из БД.
+    """
+    async with SessionLocal() as session:
+        result = await session.execute(
+            select(CBRMeeting.actual_rate)
+            .where(CBRMeeting.actual_rate.is_not(None))
+            .order_by(CBRMeeting.meeting_date.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
+
 async def get_all_forecasts_for_meeting(meeting_id: int) -> list[RateForecast]:
     """
     Возвращает все прогнозы пользователей на конкретное заседание.

@@ -21,7 +21,7 @@ from services.forecast_service import (
     mark_forecast_correct,
     get_user_stats,
 )
-from services.key_rate_service import invalidate_rate_cache
+from services.key_rate_service import set_rate_cache
 from utils.constants import MONTHS_RU
 from utils.formatters import format_rate_html
 
@@ -160,7 +160,7 @@ async def set_rate_handler(message: Message) -> None:
         return
 
     await set_meeting_actual_rate(meeting.id, actual_rate)
-    await invalidate_rate_cache()
+    await set_rate_cache(actual_rate)  # пишем в кэш напрямую, не ждём обновления CBR API
     rate_display = format_rate_html(actual_rate)
 
     forecasts = await get_all_forecasts_for_meeting(meeting.id)

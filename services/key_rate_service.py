@@ -23,10 +23,22 @@ async def _get_redis():
 
 
 async def invalidate_rate_cache() -> None:
-    """Сбрасывает кэш ключевой ставки. Вызывается после рассылки итогов заседания."""
+    """Сбрасывает кэш ключевой ставки."""
     redis = await _get_redis()
     if redis:
         await redis.delete(CACHE_KEY)
+
+
+async def set_rate_cache(rate: float) -> None:
+    """
+    Записывает подтверждённую ставку напрямую в Redis (минуя CBR API).
+    Вызывается после /set_rate, чтобы кнопка «Ключевая ставка» сразу
+    показывала актуальное значение, даже если SOAP ЦБ ещё не обновился.
+    """
+    redis = await _get_redis()
+    if redis:
+        formatted = _format_rate_display(str(rate).replace(".", ","))
+        await redis.set(CACHE_KEY, formatted, ex=CACHE_TTL)
 
 # Кэш клиента zeep — создаётся один раз, переиспользуется в рамках одного экземпляра функции
 _cbr_client = None
@@ -114,19 +126,31 @@ def _format_rate_display(rate_str: str) -> str:
 async def get_key_rate_text() -> str:
     redis = await _get_redis()
 
-    # Проверяем кэш
+    # Быстрый путь: кэш Redis
     if redis:
         cached = await redis.get(CACHE_KEY)
         if cached:
-            rate = cached.decode()
-            return f"Текущая ключевая ставка — <b>{rate}</b>%"
+            return f"Текущая ключевая ставка — <b>{cached.decode()}</b>%"
 
     # Кэша нет — идём к ЦБ
     raw_rate = await fetch_key_rate()
-    rate = _format_rate_display(raw_rate)
+    cbr_rate_str = _format_rate_display(raw_rate)
 
-    # Сохраняем отформатированное значение в Redis на 2 часа
+    # Сверяем с последней подтверждённой ставкой из БД.
+    # ЦБ обновляет SOAP API с задержкой после заседания — иногда несколько часов.
+    # Если их данные расходятся с тем, что сохранил /set_rate → показываем подтверждённую.
+    # Когда ЦБ наконец обновится и ставки совпадут → переходим обратно к штатной логике.
+    from services.forecast_service import get_latest_confirmed_rate
+    confirmed = await get_latest_confirmed_rate()
+    if confirmed is not None:
+        confirmed_str = _format_rate_display(str(confirmed).replace(".", ","))
+        if confirmed_str != cbr_rate_str:
+            # ЦБ ещё не обновился — кэшируем подтверждённую и возвращаем её
+            if redis:
+                await redis.set(CACHE_KEY, confirmed_str, ex=CACHE_TTL)
+            return f"Текущая ключевая ставка — <b>{confirmed_str}</b>%"
+        # CBR совпал с подтверждённой — данные актуальны, кэшируем штатно
+
     if redis:
-        await redis.set(CACHE_KEY, rate, ex=CACHE_TTL)
-
-    return f"Текущая ключевая ставка — <b>{rate}</b>%"
+        await redis.set(CACHE_KEY, cbr_rate_str, ex=CACHE_TTL)
+    return f"Текущая ключевая ставка — <b>{cbr_rate_str}</b>%"
