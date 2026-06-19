@@ -3,9 +3,6 @@
 import asyncio
 from datetime import datetime, timedelta
 
-from zeep import Client
-from zeep.transports import Transport
-
 from config import config
 
 WSDL_URL = "https://www.cbr.ru/DailyInfoWebServ/DailyInfo.asmx?WSDL"
@@ -47,6 +44,8 @@ _cbr_client = None
 def _get_cbr_client():
     global _cbr_client
     if _cbr_client is None:
+        from zeep import Client
+        from zeep.transports import Transport
         transport = Transport(timeout=15)
         _cbr_client = Client(wsdl=WSDL_URL, transport=transport)
     return _cbr_client
