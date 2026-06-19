@@ -101,9 +101,10 @@ workflows:
             script:
               - |
                 echo "Registering Telegram webhook: $WEBHOOK_URL"
-                curl --request POST \
-                  --url "https://api.telegram.org/bot${TG_BOT_TOKEN}/setWebhook?url=${WEBHOOK_URL}&drop_pending_updates=true"
-                echo ""
+                RESPONSE=$(curl --silent --request POST \
+                  --url "https://api.telegram.org/bot${TG_BOT_TOKEN}/setWebhook?url=${WEBHOOK_URL}&drop_pending_updates=true" \
+                  || echo '{"ok":false,"description":"curl failed"}')
+                echo "Telegram response: $RESPONSE"
                 echo "Done!"
 
           - name: get-outputs
