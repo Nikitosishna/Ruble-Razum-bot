@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "functions": {
+    "api/webhook.py":   { "memory": 512, "maxDuration": 30 },
+    "api/payment.py":   { "memory": 512, "maxDuration": 30 },
+    "api/reminders.py": { "memory": 256, "maxDuration": 60 },
+    "api/results.py":   { "memory": 256, "maxDuration": 60 }
+  },
+  "routes": [
+    { "src": "/webhook",   "dest": "api/webhook.py"   },
+    { "src": "/payment",   "dest": "api/payment.py"   },
+    { "src": "/reminders", "dest": "api/reminders.py" },
+    { "src": "/results",   "dest": "api/results.py"   }
+  ],
+  "crons": [
+    { "path": "/reminders", "schedule": "0 7 * * *"   },
+    { "path": "/results",   "schedule": "30 10 * * *" }
+  ]
+}

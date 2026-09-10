@@ -35,7 +35,7 @@
 Получается через официальный **SOAP/WSDL-сервис ЦБ РФ** (библиотека `zeep`):
 - Клиент `zeep` инициализируется один раз при холодном старте
 - Ответ кэшируется в **Redis на 2 часа** — повторные запросы не идут к ЦБ
-- Кэш сбрасывается автоматически в день объявления новой ставки
+- После `/set_rate` новая ставка записывается в кэш немедленно, не дожидаясь обновления SOAP ЦБ
 
 ---
 
@@ -45,8 +45,8 @@
 |-------|----------------|
 | Заранее | Администратор добавляет даты заседаний командой `/update_dates` |
 | За 2 дня до заседания | Открывается окно — пользователи вводят прогноз (`21`, `21.5`, `21,5%`) |
-| 10:00 МСК накануне | `yc-reminders` напоминает подписчикам, у кого ещё нет прогноза |
-| 13:30 МСК в день заседания | `yc-results` получает новую ставку через SOAP ЦБ и рассылает **персональный результат** каждому участнику |
+| 10:00 МСК накануне | `/reminders` напоминает подписчикам, у кого ещё нет прогноза |
+| 13:30 МСК в день заседания | `/results` получает новую ставку через SOAP ЦБ и рассылает **персональный результат** каждому участнику |
 | Резерв | Администратор может запустить рассылку вручную: `/set_rate 2026-04-25 21.0` |
 
 ---
@@ -56,7 +56,7 @@
 Интегрирована **ЮKassa**:
 1. Пользователь нажимает «Перейти к оплате»
 2. Бот создаёт платёж через REST API и отправляет ссылку
-3. После оплаты ЮKassa присылает webhook → функция `yc-payment` верифицирует событие, обновляет статус в БД и автоматически доставляет PDF гайда в чат
+3. После оплаты ЮKassa присылает webhook → `api/payment.py` верифицирует событие, обновляет статус в БД и автоматически доставляет PDF гайда в чат
 
 ---
 
@@ -75,7 +75,7 @@ services/
   key_rate_service.py   — ключевая ставка (SOAP/zeep + Redis-кэш)
   forecast_service.py   — логика прогнозов и заседаний ЦБ
   payment_service.py    — интеграция с ЮKassa
-  scheduler_service.py  — APScheduler (локальный режим) + cron-логика для YC
+  scheduler_service.py  — логика рассылки напоминаний и итогов
   db_service.py         — CRUD-операции с БД
   file_service.py       — PDF/изображения
 models/
@@ -90,8 +90,8 @@ utils/
   validators.py         — валидация имени и email
   constants.py          — русские названия месяцев
   formatters.py         — форматирование ключевой ставки для HTML-сообщений
-yc/
-  webhook.py    — обработка Telegram-обновлений (точка входа в YC Functions)
+api/
+  webhook.py    — Telegram-обновления (точка входа Vercel)
   payment.py    — webhook ЮKassa (автодоставка гайда)
   reminders.py  — cron 10:00 МСК (напоминания подписчикам)
   results.py    — cron 13:30 МСК (итоги заседания ЦБ)
@@ -100,13 +100,11 @@ yc/
 ### Поток данных (продакшн)
 
 ```
-Telegram  → POST /webhook   → yc/webhook.py    — обрабатывает все обновления бота
-ЮKassa    → POST /payment   → yc/payment.py    — автодоставка гайда после оплаты
-Scheduler → GET  /reminders → yc/reminders.py  — 10:00 МСК, напоминания подписчикам
-Scheduler → GET  /results   → yc/results.py    — 13:30 МСК, итоги заседания ЦБ
+Telegram     → POST /webhook   → api/webhook.py   — обрабатывает все обновления бота
+ЮKassa       → POST /payment   → api/payment.py   — автодоставка гайда после оплаты
+Vercel Cron  → GET  /reminders → api/reminders.py — 10:00 МСК, напоминания подписчикам
+Vercel Cron  → GET  /results   → api/results.py   — 13:30 МСК, итоги заседания ЦБ
 ```
-
-Каждый файл в папке `yc/` — отдельная Yandex Cloud Function с точкой входа `handler(event, context)`.
 
 ---
 
@@ -119,9 +117,9 @@ Scheduler → GET  /results   → yc/results.py    — 13:30 МСК, итоги 
 | База данных | PostgreSQL (Supabase) |
 | ORM | SQLAlchemy (async) |
 | FSM-хранилище | Redis (Upstash) |
-| Хостинг функций | Yandex Cloud Functions (serverless) |
-| Cron-задачи | Yandex Cloud Scheduler |
-| CI/CD | Sourcecraft |
+| Хостинг | Vercel Serverless Functions |
+| Cron-задачи | Vercel Cron Jobs |
+| CI/CD | Vercel Git Integration (GitHub) |
 | API ЦБ РФ | SOAP/WSDL через zeep |
 | Платёжная система | ЮKassa REST API |
 
@@ -139,124 +137,51 @@ Scheduler → GET  /results   → yc/results.py    — 13:30 МСК, итоги 
 | `YOOKASSA_SECRET_KEY` | [ЮKassa](https://yookassa.ru) → Интеграция |
 | `ADMIN_ID` | [@userinfobot](https://t.me/userinfobot) |
 | `REDIS_URL` | [Upstash](https://upstash.com) → Redis → Connect → TCP |
-| `WEBHOOK_URL` | URL функции `tg-webhook` из Yandex Cloud (после деплоя) |
+| `WEBHOOK_URL` | URL бота на Vercel (после деплоя: `https://YOUR_PROJECT.vercel.app/webhook`) |
 | `CRON_SECRET` | Любая случайная строка |
 
 ---
 
-## Деплой: Вариант 1 — Sourcecraft + Yandex Cloud (рекомендуется)
+## Деплой: Vercel + Supabase + Upstash
 
-GitOps-деплой: одна команда — и всё разворачивается автоматически.
+Vercel автоматически деплоит бота при каждом push в GitHub.
 
-### Подготовка (один раз)
+### Первый деплой (один раз)
 
-1. Зарегистрироваться на [sourcecraft.dev](https://sourcecraft.dev) и активировать грант
-2. Создать репозиторий в Sourcecraft, добавить remote:
+1. Зарегистрироваться на [vercel.com](https://vercel.com) и подключить GitHub-репозиторий
+2. Добавить переменные окружения в настройках проекта на Vercel
+3. Нажать **Deploy** — Vercel соберёт проект автоматически
 
-```bash
-git remote add sourcecraft https://git@git.sourcecraft.dev/YOUR_ORG/YOUR_REPO.git
-```
-
-3. Настроить одновременный пуш на GitHub и Sourcecraft:
-
-```bash
-git remote set-url --add --push origin https://github.com/Nikitosishna/Ruble-Razum-bot.git
-git remote set-url --add --push origin https://git@git.sourcecraft.dev/YOUR_ORG/YOUR_REPO.git
-```
-
-После этого `git push` отправляет код в оба места одновременно.
-
-4. В Sourcecraft привязать **Service Connection** к Yandex Cloud (раздел Настройки организации)
-
-### Деплой
+### Последующие деплои
 
 ```bash
 git push
 ```
 
-Sourcecraft автоматически запускает пайплайн из `.sourcecraft/ci.yaml`:
-- Разворачивает 4 Yandex Cloud Functions (`tg-webhook`, `yc-payment`, `yc-reminders`, `yc-results`)
-- Регистрирует webhook у Telegram
-- Сбрасывает очередь старых апдейтов (`drop_pending_updates=true`)
+Vercel подхватит push и задеплоит обновлённую версию автоматически.
 
-При первом запуске пайплайн нужно запустить вручную (CI/CD → deploy-bot → Запустить) и ввести параметры: токен бота, строку подключения к БД, ключи ЮKassa и Redis.
+### После первого деплоя: зарегистрировать webhook
 
-### Cron-триггеры (настраиваются один раз в YC Console)
+```
+https://api.telegram.org/bot<BOT_TOKEN>/setWebhook?url=https://YOUR_PROJECT.vercel.app/webhook&drop_pending_updates=true
+```
 
-| Расписание | Функция | Время МСК |
-|-----------|---------|-----------|
-| `0 7 * * *` | `yc-reminders` | 10:00 |
-| `30 10 * * *` | `yc-results` | 13:30 |
+### Webhook ЮKassa
 
-### ЮKassa webhook
+В настройках ЮKassa указать `https://YOUR_PROJECT.vercel.app/payment`.
 
-В настройках ЮKassa указать URL функции `yc-payment` для получения уведомлений об оплате.
+### Cron-задачи
+
+Vercel автоматически запускает задачи по расписанию из `vercel.json`:
+
+| Расписание | Путь | Время МСК |
+|-----------|------|-----------|
+| `0 7 * * *` | `/reminders` | 10:00 |
+| `30 10 * * *` | `/results` | 13:30 |
 
 ---
 
-## Деплой: Вариант 2 — Vercel + Supabase + Upstash (международные сервисы)
-
-Архитектурно идентичен Варианту 1, но на общедоступных западных платформах. Подходит, если нет доступа к Yandex Cloud или нужна глобальная инфраструктура.
-
-| Компонент | Вариант 1 (RU) | Вариант 2 (INT) |
-|-----------|---------------|-----------------|
-| Serverless-функции | Yandex Cloud Functions | Vercel Serverless Functions |
-| Cron-задачи | Yandex Cloud Scheduler | Vercel Cron Jobs |
-| CI/CD | Sourcecraft | Vercel Git Integration (GitHub) |
-| PostgreSQL | Supabase | Supabase (то же самое) |
-| Redis | Upstash | Upstash (то же самое) |
-
-### Подготовка (один раз)
-
-1. Зарегистрироваться на [vercel.com](https://vercel.com), подключить GitHub-репозиторий
-2. Добавить `vercel.json` в корень проекта с маршрутизацией функций:
-
-```json
-{
-  "functions": {
-    "yc/webhook.py":  { "memory": 512 },
-    "yc/payment.py":  { "memory": 512 },
-    "yc/reminders.py": { "memory": 256 },
-    "yc/results.py":   { "memory": 256 }
-  },
-  "routes": [
-    { "src": "/webhook",  "dest": "yc/webhook.py"  },
-    { "src": "/payment",  "dest": "yc/payment.py"  },
-    { "src": "/reminders","dest": "yc/reminders.py" },
-    { "src": "/results",  "dest": "yc/results.py"   }
-  ],
-  "crons": [
-    { "path": "/reminders", "schedule": "0 7 * * *"  },
-    { "path": "/results",   "schedule": "30 10 * * *" }
-  ]
-}
-```
-
-3. В настройках проекта на Vercel добавить все переменные окружения из `.env.example`
-
-### Деплой
-
-```bash
-git push
-```
-
-Vercel автоматически подхватывает пуш в GitHub и деплоит функции.
-
-### Webhook и ЮKassa
-
-После первого деплоя зарегистрировать webhook у Telegram:
-
-```
-https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://YOUR_PROJECT.vercel.app/webhook&drop_pending_updates=true
-```
-
-В настройках ЮKassa указать `https://YOUR_PROJECT.vercel.app/payment` для уведомлений об оплате.
-
----
-
-## Деплой: Вариант 3 — Локальный запуск (polling)
-
-Для разработки и тестирования бот запускается локально через long polling — без webhook и без Redis:
+## Локальный запуск (разработка)
 
 ```bash
 python main.py
