@@ -2,15 +2,15 @@ import asyncio
 import logging
 from http.server import BaseHTTPRequestHandler
 
+_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(_loop)
+
 from bot_instance import bot
 from config import config
 from services.scheduler_service import send_meeting_results
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-_loop = asyncio.new_event_loop()
-asyncio.set_event_loop(_loop)
 
 
 class handler(BaseHTTPRequestHandler):

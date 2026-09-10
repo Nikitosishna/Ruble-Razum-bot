@@ -3,6 +3,9 @@ import json
 import logging
 from http.server import BaseHTTPRequestHandler
 
+_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(_loop)
+
 from bot_instance import bot
 from services.db_service import get_payment_by_payment_id, update_payment_status
 from services.file_service import get_guide_file
@@ -10,9 +13,6 @@ from services.payment_service import get_payment_status
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-_loop = asyncio.new_event_loop()
-asyncio.set_event_loop(_loop)
 
 
 async def _handle_payment(body: bytes) -> None:

@@ -3,15 +3,16 @@ import json
 import logging
 from http.server import BaseHTTPRequestHandler
 
-from aiogram.types import Update
+# Event loop must be set before importing bot_instance so the Redis client
+# is created on the same loop we will use in _loop.run_until_complete()
+_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(_loop)
 
+from aiogram.types import Update
 from bot_instance import bot, dp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-_loop = asyncio.new_event_loop()
-asyncio.set_event_loop(_loop)
 
 
 class handler(BaseHTTPRequestHandler):
