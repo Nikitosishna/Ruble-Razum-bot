@@ -22,10 +22,25 @@ from services.forecast_service import (
     get_user_stats,
 )
 from services.key_rate_service import set_rate_cache
+from services.scheduler_service import send_forecast_reminders
 from utils.constants import MONTHS_RU
 from utils.formatters import format_rate_html
 
 router = Router()
+
+
+@router.message(Command("send_reminders"))
+async def send_reminders_handler(message: Message) -> None:
+    """
+    Ручная рассылка напоминаний всем подписчикам без прогноза.
+    Работает независимо от того, сколько дней до заседания.
+    """
+    if message.from_user.id != config.ADMIN_ID:
+        return
+
+    await message.answer("⏳ Рассылаю напоминания...")
+    sent = await send_forecast_reminders(message.bot, force=True)
+    await message.answer(f"✅ Напоминания отправлены: <b>{sent}</b> пользователям.", parse_mode="HTML")
 
 
 @router.message(Command("update_dates"))

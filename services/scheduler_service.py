@@ -31,15 +31,16 @@ def _parse_rate_str(rate_str: str) -> float:
 
 
 
-async def send_forecast_reminders(bot: Bot) -> None:
+async def send_forecast_reminders(bot: Bot, force: bool = False) -> int:
     """
-    Задача 1 — ежедневно в 10:00 МСК.
-    Отправляет напоминание подписчикам, у которых ещё нет прогноза
-    на ближайшее заседание (за 1 или 2 дня до него).
+    Отправляет напоминание подписчикам без прогноза на ближайшее заседание.
+    Автоматически запускается в 10:00 и 13:00 МСК при days_left in (0, 1, 2).
+    force=True — отправить вне зависимости от дней до заседания (ручной запуск).
+    Возвращает количество отправленных напоминаний.
     """
     meeting = await get_next_meeting()
     if not meeting:
-        return
+        return 0
 
     now_msk = datetime.now(tz=MSK)
     meeting_date_msk = datetime(
@@ -50,8 +51,8 @@ async def send_forecast_reminders(bot: Bot) -> None:
     )
     days_left = (meeting_date_msk.date() - now_msk.date()).days
 
-    if days_left not in (1, 2):
-        return
+    if not force and days_left not in (0, 1, 2):
+        return 0
 
     meeting_str = f"{meeting.meeting_date.day} {MONTHS_RU[meeting.meeting_date.month]}"
     days_word = "2 дня" if days_left == 2 else "1 день"
@@ -88,6 +89,7 @@ async def send_forecast_reminders(bot: Bot) -> None:
             print(f"[Scheduler] Не удалось отправить напоминание {user_id}: {repr(e)}")
 
     print(f"[Scheduler] Напоминания отправлены {sent} пользователям (до заседания {days_word})")
+    return sent
 
 
 async def send_meeting_results(bot: Bot) -> None:
