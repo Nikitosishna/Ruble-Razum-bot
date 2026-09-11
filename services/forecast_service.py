@@ -75,13 +75,17 @@ async def get_all_meetings() -> list[CBRMeeting]:
 
 async def get_next_meeting() -> CBRMeeting | None:
     """
-    Возвращает запись ближайшего будущего заседания из БД.
+    Возвращает ближайшее заседание из БД, включая сегодняшнее.
+    Сравниваем по началу текущего дня МСК, чтобы сегодняшнее заседание
+    не пропадало из выборки до завершения дня.
     """
-    now_utc = datetime.utcnow()
+    today_msk = datetime.now(tz=MSK).replace(
+        hour=0, minute=0, second=0, microsecond=0, tzinfo=None
+    )
     async with SessionLocal() as session:
         result = await session.execute(
             select(CBRMeeting)
-            .where(CBRMeeting.meeting_date >= now_utc)
+            .where(CBRMeeting.meeting_date >= today_msk)
             .order_by(CBRMeeting.meeting_date)
             .limit(1)
         )
@@ -93,14 +97,16 @@ def _check_window_open(meeting) -> bool:
     if not meeting:
         return False
     now = datetime.now(tz=MSK)
-    meeting_aware = datetime(
+    # Окно закрывается в 13:20 МСК в день заседания (за 10 минут до рассылки итогов)
+    meeting_close = datetime(
         meeting.meeting_date.year,
         meeting.meeting_date.month,
         meeting.meeting_date.day,
+        13, 20,
         tzinfo=MSK
     )
-    minutes_left = (meeting_aware - now).total_seconds() / 60
-    return 30 <= minutes_left <= 2 * 24 * 60
+    minutes_left = (meeting_close - now).total_seconds() / 60
+    return 0 <= minutes_left <= 2 * 24 * 60
 
 
 async def is_forecast_window_open() -> bool:

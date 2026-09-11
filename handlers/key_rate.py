@@ -2,6 +2,7 @@
 # Показывает текущую ставку, ближайшее заседание и (если окно открыто) блок прогноза.
 
 import asyncio
+from datetime import datetime, timezone, timedelta
 
 from aiogram import Router
 from aiogram.types import Message
@@ -37,9 +38,14 @@ async def key_rate_handler(message: Message) -> None:
 
     window_open = _check_window_open(next_meeting)
 
+    MSK = timezone(timedelta(hours=3))
+    today_msk = datetime.now(tz=MSK).date()
     if next_meeting:
         d = next_meeting.meeting_date
-        meeting_str = f"{d.day} {MONTHS_RU[d.month]} {d.year}"
+        if d.date() == today_msk:
+            meeting_str = f"сегодня, {d.day} {MONTHS_RU[d.month]}"
+        else:
+            meeting_str = f"{d.day} {MONTHS_RU[d.month]} {d.year}"
     else:
         meeting_str = "дата уточняется"
 
@@ -47,7 +53,7 @@ async def key_rate_handler(message: Message) -> None:
     if not window_open:
         await message.answer(
             f"🔑 {rate_text}\n\n"
-            f"Следующее заседание по ставке состоится <b>{meeting_str}</b>.",
+            f"Следующее заседание по ставке — <b>{meeting_str}</b>.",
             parse_mode="HTML"
         )
         return

@@ -1,5 +1,3 @@
-#Файл для API запросов к ЦБ РФ и Binance
-
 import asyncio
 import xml.etree.ElementTree as ET
 
@@ -7,7 +5,7 @@ import httpx
 
 
 CBR_DAILY_URL = "https://www.cbr.ru/scripts/XML_daily.asp"
-BINANCE_TICKER_URL = "https://api.binance.com/api/v3/ticker/price"
+COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price"
 
 FIAT_CODES = {"USD", "EUR", "CNY", "AED", "TRY", "GBP", "GEL", "BYN", "CHF"}
 
@@ -107,24 +105,21 @@ async def get_fiat_rate(char_code: str) -> str:
     return f"{title}: {formatted_value} ₽"
 
 
-async def fetch_binance_price(symbol: str) -> float:
+async def fetch_coingecko_prices(coin_ids: str) -> dict:
     """
-    Получает последнюю цену инструмента с Binance.
-    Например:
-    - BTCUSDT
-    - ETHUSDT
+    Получает цены криптовалют с CoinGecko.
+    coin_ids — строка с id через запятую, например "bitcoin,ethereum".
+    Возвращает: {"bitcoin": {"usd": 95000.0}, "ethereum": {"usd": 3500.0}}
     """
-
-    params = {"symbol": symbol.upper()}
+    params = {"ids": coin_ids, "vs_currencies": "usd"}
 
     for attempt in range(3):
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(BINANCE_TICKER_URL, params=params)
+                response = await client.get(COINGECKO_URL, params=params)
                 response.raise_for_status()
 
-            data = response.json()
-            return float(data["price"])
+            return response.json()
 
         except Exception:
             if attempt == 2:
@@ -162,15 +157,15 @@ async def get_crypto_rate(code: str) -> str:
     usd_rub = rates["USD"]["value"]
 
     if code == "BTC":
-        price_usd = await fetch_binance_price("BTCUSDT")
+        data = await fetch_coingecko_prices("bitcoin")
+        price_usd = float(data["bitcoin"]["usd"])
         price_rub = price_usd * usd_rub
-
         return f"Bitcoin 🌐: {format_number_with_commas(price_usd)} $ / {format_number_with_commas(price_rub)} ₽"
 
     if code == "ETH":
-        price_usd = await fetch_binance_price("ETHUSDT")
+        data = await fetch_coingecko_prices("ethereum")
+        price_usd = float(data["ethereum"]["usd"])
         price_rub = price_usd * usd_rub
-
         return f"Ethereum 💠: {format_number_with_commas(price_usd)} $ / {format_number_with_commas(price_rub)} ₽"
 
     raise ValueError(f"Неподдерживаемая криптовалюта: {code}")
