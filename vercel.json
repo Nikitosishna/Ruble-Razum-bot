@@ -13,7 +13,6 @@
     { "src": "/results",   "dest": "api/results.py"   }
   ],
   "crons": [
-    { "path": "/reminders", "schedule": "0 7 * * *"   },
     { "path": "/reminders", "schedule": "0 10 * * *"  },
     { "path": "/results",   "schedule": "30 10 * * *" }
   ]

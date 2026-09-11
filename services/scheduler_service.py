@@ -33,10 +33,10 @@ def _parse_rate_str(rate_str: str) -> float:
 
 async def send_forecast_reminders(bot: Bot, force: bool = False) -> int:
     """
-    Отправляет напоминание подписчикам без прогноза на ближайшее заседание.
-    Автоматически запускается в 10:00 и 13:00 МСК при days_left in (0, 1, 2).
-    force=True — отправить вне зависимости от дней до заседания (ручной запуск).
-    Возвращает количество отправленных напоминаний.
+    13:00 МСК за 2 дня — пишет всем зарегистрированным (анонс).
+    13:00 МСК за 1 день и в день заседания — только тем, кто без прогноза.
+    force=True — тем же пользователям без прогноза, независимо от дней до заседания.
+    Возвращает количество отправленных сообщений.
     """
     meeting = await get_next_meeting()
     if not meeting:
@@ -55,7 +55,36 @@ async def send_forecast_reminders(bot: Bot, force: bool = False) -> int:
         return 0
 
     meeting_str = f"{meeting.meeting_date.day} {MONTHS_RU[meeting.meeting_date.month]}"
-    days_word = "2 дня" if days_left == 2 else "1 день"
+
+    # За 2 дня (авто) — анонс всем; в остальных случаях — только без прогноза
+    announce_all = (days_left == 2 and not force)
+
+    if days_left == 2:
+        when_str = "через 2 дня"
+        text_template = (
+            f"📅 Через 2 дня — заседание ЦБ РФ по ключевой ставке (<b>{meeting_str}</b>).\n\n"
+            f"Сделайте свой прогноз — окно для голосования открыто!"
+        )
+    elif days_left == 1:
+        when_str = "завтра"
+        text_template = (
+            f"⏰ Напоминание: завтра (<b>{meeting_str}</b>) заседание ЦБ РФ.\n\n"
+            f"Вы ещё не сделали прогноз — успейте до 13:20 МСК!"
+        )
+    else:
+        # days_left == 0 или force с произвольным числом дней
+        when_str = f"через {days_left} дн." if days_left > 2 else "сегодня"
+        text_template = (
+            f"⏰ Последний шанс: заседание ЦБ РФ <b>сегодня ({meeting_str})</b>.\n\n"
+            f"Окно для прогнозов закрывается в <b>13:20 МСК</b> — не упустите!"
+        ) if days_left == 0 else (
+            f"📅 Заседание ЦБ РФ (<b>{meeting_str}</b>) — {when_str}.\n\n"
+            f"Вы ещё не сделали прогноз — успейте до начала заседания!"
+        )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="🎯 Сделать прогноз", callback_data="make_forecast")
+    ]])
 
     users = await get_all_registered_users()
     if not users:
@@ -64,22 +93,14 @@ async def send_forecast_reminders(bot: Bot, force: bool = False) -> int:
     sent = 0
     for user_id in users:
         try:
-            user_forecast = await get_user_forecast(user_id, meeting.id)
-            if user_forecast:
-                continue  # уже проголосовал — напоминание не нужно
-
-            text = (
-                f"⏰ Напоминание: через {days_word} заседание ЦБ РФ "
-                f"(<b>{meeting_str}</b>).\n\n"
-                f"Вы ещё не сделали прогноз — успейте до начала заседания!"
-            )
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[[
-                InlineKeyboardButton(text="🎯 Сделать прогноз", callback_data="make_forecast")
-            ]])
+            if not announce_all:
+                user_forecast = await get_user_forecast(user_id, meeting.id)
+                if user_forecast:
+                    continue
 
             await bot.send_message(
                 chat_id=user_id,
-                text=text,
+                text=text_template,
                 reply_markup=keyboard,
                 parse_mode="HTML"
             )
@@ -88,7 +109,7 @@ async def send_forecast_reminders(bot: Bot, force: bool = False) -> int:
         except Exception as e:
             print(f"[Scheduler] Не удалось отправить напоминание {user_id}: {repr(e)}")
 
-    print(f"[Scheduler] Напоминания отправлены {sent} пользователям (до заседания {days_word})")
+    print(f"[Scheduler] Напоминания отправлены {sent} пользователям (days_left={days_left})")
     return sent
 
 
