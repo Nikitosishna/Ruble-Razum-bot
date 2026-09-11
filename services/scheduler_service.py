@@ -10,7 +10,6 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from services.forecast_service import (
     get_next_meeting,
-    get_all_subscribers,
     get_user_forecast,
     get_meetings_pending_results,
     get_all_forecasts_for_meeting,
@@ -18,6 +17,7 @@ from services.forecast_service import (
     mark_forecast_correct,
     get_user_stats,
 )
+from services.db_service import get_all_registered_users
 from services.key_rate_service import fetch_key_rate, invalidate_rate_cache
 from utils.constants import MONTHS_RU
 from utils.formatters import format_rate_html
@@ -57,12 +57,12 @@ async def send_forecast_reminders(bot: Bot, force: bool = False) -> int:
     meeting_str = f"{meeting.meeting_date.day} {MONTHS_RU[meeting.meeting_date.month]}"
     days_word = "2 дня" if days_left == 2 else "1 день"
 
-    subscribers = await get_all_subscribers()
-    if not subscribers:
-        return
+    users = await get_all_registered_users()
+    if not users:
+        return 0
 
     sent = 0
-    for user_id in subscribers:
+    for user_id in users:
         try:
             user_forecast = await get_user_forecast(user_id, meeting.id)
             if user_forecast:

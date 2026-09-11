@@ -51,6 +51,13 @@ async def get_user_by_telegram_id(telegram_user_id: int) -> User | None:
         return result.scalar_one_or_none()
 
 
+async def get_all_registered_users() -> list[int]:
+    """Возвращает список telegram_user_id всех зарегистрированных пользователей."""
+    async with SessionLocal() as session:
+        result = await session.execute(select(User.telegram_user_id))
+        return list(result.scalars().all())
+
+
 async def create_payment_record(
     telegram_user_id: int,
     product_name: str,
