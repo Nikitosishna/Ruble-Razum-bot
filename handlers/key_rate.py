@@ -49,21 +49,30 @@ async def key_rate_handler(message: Message) -> None:
     else:
         meeting_str = "дата уточняется"
 
-    # Окно прогноза закрыто — просто показываем ставку и дату заседания
-    if not window_open:
-        await message.answer(
-            f"🔑 {rate_text}\n\n"
-            f"Следующее заседание по ставке — <b>{meeting_str}</b>.",
-            parse_mode="HTML"
-        )
-        return
-
-    # Окно открыто — параллельно запрашиваем прогноз и подписку
+    # Всегда проверяем прогноз пользователя (показываем даже после закрытия окна)
     user_forecast, subscribed = await asyncio.gather(
-        get_user_forecast(message.from_user.id, next_meeting.id),
+        get_user_forecast(message.from_user.id, next_meeting.id) if next_meeting else asyncio.sleep(0),
         is_user_subscribed(message.from_user.id),
     )
 
+    # Окно прогноза закрыто
+    if not window_open:
+        if user_forecast:
+            text = (
+                f"🔑 {rate_text}\n\n"
+                f"Следующее заседание по ставке — <b>{meeting_str}</b>.\n\n"
+                f"✅ Ваш прогноз на это заседание: "
+                f"<b>{user_forecast.forecast_raw.rstrip('%')}%</b>"
+            )
+        else:
+            text = (
+                f"🔑 {rate_text}\n\n"
+                f"Следующее заседание по ставке — <b>{meeting_str}</b>."
+            )
+        await message.answer(text, parse_mode="HTML")
+        return
+
+    # Окно открыто
     if user_forecast:
         text = (
             f"🔑 {rate_text}\n\n"
