@@ -85,7 +85,10 @@ async def get_next_meeting() -> CBRMeeting | None:
     async with SessionLocal() as session:
         result = await session.execute(
             select(CBRMeeting)
-            .where(CBRMeeting.meeting_date >= today_msk)
+            .where(
+                CBRMeeting.meeting_date >= today_msk,
+                CBRMeeting.actual_rate.is_(None),  # исключаем завершённые заседания
+            )
             .order_by(CBRMeeting.meeting_date)
             .limit(1)
         )
