@@ -180,7 +180,7 @@ def start_scheduler(bot: Bot) -> AsyncIOScheduler:
     scheduler.add_job(
         send_forecast_reminders,
         trigger="cron",
-        hour=10,
+        hour=13,
         minute=0,
         args=[bot],
         name="forecast_reminders"
@@ -196,5 +196,5 @@ def start_scheduler(bot: Bot) -> AsyncIOScheduler:
     )
 
     scheduler.start()
-    print("[Scheduler] Планировщик запущен (напоминания: 10:00, итоги: 13:30 МСК)")
+    print("[Scheduler] Планировщик запущен (напоминания: 13:00, итоги: 13:30 МСК)")
     return scheduler

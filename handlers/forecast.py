@@ -79,7 +79,7 @@ async def process_forecast(message: Message, state: FSMContext) -> None:
     buttons = []
     if not subscribed:
         buttons.append([InlineKeyboardButton(
-            text="Напомнить о следующим заседании",
+            text="Напомнить о следующем заседании",
             callback_data="subscribe_forecast"
         )])
     buttons.append([

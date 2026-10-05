@@ -100,16 +100,23 @@ def _check_window_open(meeting) -> bool:
     if not meeting:
         return False
     now = datetime.now(tz=MSK)
+    # Окно открывается в 00:00 МСК за 2 дня до заседания
+    window_start = datetime(
+        meeting.meeting_date.year,
+        meeting.meeting_date.month,
+        meeting.meeting_date.day,
+        0, 0,
+        tzinfo=MSK
+    ) - timedelta(days=2)
     # Окно закрывается в 13:20 МСК в день заседания (за 10 минут до рассылки итогов)
-    meeting_close = datetime(
+    window_end = datetime(
         meeting.meeting_date.year,
         meeting.meeting_date.month,
         meeting.meeting_date.day,
         13, 20,
         tzinfo=MSK
     )
-    minutes_left = (meeting_close - now).total_seconds() / 60
-    return 0 <= minutes_left <= 2 * 24 * 60
+    return window_start <= now <= window_end
 
 
 async def is_forecast_window_open() -> bool:
