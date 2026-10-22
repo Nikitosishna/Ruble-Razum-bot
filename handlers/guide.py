@@ -7,7 +7,7 @@ from aiogram.types import Message, CallbackQuery
 from keyboards.inline import get_guide_payment_inline_keyboard, get_documents_inline_keyboard
 from services.db_service import create_payment_record, get_succeeded_guide_payment
 from services.payment_service import create_payment
-from services.file_service import get_guide_file, get_privacy_policy_file, get_offer_file
+from services.file_service import get_guide_file, get_privacy_policy_file, get_offer_file, GUIDE_COVER_IMAGE_PATH, get_guide_cover_image_file
 
 router = Router()
 
@@ -40,10 +40,11 @@ async def guide_handler(message: Message) -> None:
         "9. Как выстроить финансовый план на несколько лет вперёд\n\n"
         "🌐 Бонусный раздел по криптовалютам: основы крипты и блокчейна,"
         " базовые виды активов, кошельки, риски и принципы безопасности\n\n"
-        "💰 Стоимость: <s>1490₽</s> <b>990₽</b>\n\n"
-        "Без лишней теории и громких обещаний — база, которая поможет лучше понимать,"
-        " как работают финансовые инструменты."
+        "💰 Стоимость: <s>1490₽</s> <b>990₽</b>"
     )
+
+    if GUIDE_COVER_IMAGE_PATH.exists():
+        await message.answer_photo(photo=get_guide_cover_image_file())
 
     await message.answer(
         text=guide_text,

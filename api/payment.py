@@ -8,7 +8,7 @@ asyncio.set_event_loop(_loop)
 
 from bot_instance import bot
 from services.db_service import get_payment_by_payment_id, update_payment_status
-from services.file_service import get_guide_file
+from services.file_service import get_guide_file, GUIDE_COVER_IMAGE_PATH, get_guide_cover_image_file
 from services.payment_service import get_payment_status
 
 logging.basicConfig(level=logging.INFO)
@@ -46,6 +46,8 @@ async def _handle_payment(body: bytes) -> None:
             "управлению своими финансами."
         )
     )
+    if GUIDE_COVER_IMAGE_PATH.exists():
+        await bot.send_photo(chat_id=payment_record.telegram_user_id, photo=get_guide_cover_image_file())
     guide_file = get_guide_file()
     await bot.send_document(chat_id=payment_record.telegram_user_id, document=guide_file)
     logger.info(f"Гайд отправлен пользователю {payment_record.telegram_user_id}")

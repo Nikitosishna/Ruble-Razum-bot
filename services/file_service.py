@@ -12,6 +12,7 @@ OFFER_PATH = FILES_DIR / "offer.pdf"
 GUIDE_PATH = FILES_DIR / "guide.pdf"
 COMMUNITY_IMAGE_PATH = FILES_DIR / "community_pic.png"
 WHAT_CAN_BOT_IMAGE_PATH = FILES_DIR / "what_can_bot_pic.png"
+GUIDE_COVER_IMAGE_PATH = FILES_DIR / "guide_cover_pic.png"
 BUDGET_TEMPLATE_IMAGE_PATHS = [
     FILES_DIR / "budget_template_pic1.png",
     FILES_DIR / "budget_template_pic2.png",
@@ -94,6 +95,11 @@ def get_what_can_bot_image_file() -> FSInputFile:
         )
 
     return FSInputFile(str(WHAT_CAN_BOT_IMAGE_PATH))
+
+
+def get_guide_cover_image_file() -> FSInputFile:
+    """Возвращает изображение обложки гайда."""
+    return FSInputFile(str(GUIDE_COVER_IMAGE_PATH))
 
 
 def get_budget_template_image_files() -> list[FSInputFile]:
