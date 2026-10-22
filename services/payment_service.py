@@ -11,7 +11,7 @@ YOOKASSA_API_URL = "https://api.yookassa.ru/v3/payments"
 async def create_payment(
         amount: float,
         description: str = "Гайд по финансовой грамотности",
-        return_url: str = "https://example.com/success"  # после оплаты вернётся сюда
+        return_url: str = "https://t.me/Ruble_Razum_bot"
 ) -> dict:
     """
     Создаёт платёж в ЮKassa.
