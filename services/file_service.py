@@ -9,7 +9,7 @@ FILES_DIR = BASE_DIR / "files"
 
 PRIVACY_POLICY_PATH = FILES_DIR / "privacy_policy.pdf"
 OFFER_PATH = FILES_DIR / "offer.pdf"
-GUIDE_PATH = FILES_DIR / "temporary_file.pdf"
+GUIDE_PATH = FILES_DIR / "guide.pdf"
 COMMUNITY_IMAGE_PATH = FILES_DIR / "community_pic.png"
 WHAT_CAN_BOT_IMAGE_PATH = FILES_DIR / "what_can_bot_pic.png"
 
@@ -62,7 +62,7 @@ def get_guide_file() -> FSInputFile:
 
     return FSInputFile(
         path=str(GUIDE_PATH),
-        filename="Гайд по финансовой грамотности.pdf"
+        filename="Гайд по финансовой грамотности — Рубль-Разум.pdf"
     )
 
 
