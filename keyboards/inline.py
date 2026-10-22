@@ -91,6 +91,23 @@ def get_documents_inline_keyboard() -> InlineKeyboardMarkup:
     )
 
 
+def get_budget_template_keyboard() -> InlineKeyboardMarkup:
+    """
+    Кнопка для создания копии шаблона бюджетной таблицы.
+    """
+
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="📊 Скопировать таблицу",
+                    url="https://docs.google.com/spreadsheets/d/1BL13fpr2VNHe4QMrIaz2P2c_A5uTSnCVGOYneE7OuGw/copy"
+                )
+            ]
+        ]
+    )
+
+
 def get_key_rate_keyboard(
     has_forecast: bool,
     is_subscribed: bool,

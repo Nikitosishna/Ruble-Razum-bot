@@ -9,7 +9,8 @@ from handlers.key_rate import router as key_rate_router
 from handlers.forecast import router as forecast_router
 from handlers.guide import router as guide_router
 from handlers.admin import router as admin_router
+from handlers.budget_template import router as budget_template_router
 
 router = Router()
-for _r in [start_router, currency_router, key_rate_router, forecast_router, guide_router, admin_router]:
+for _r in [start_router, currency_router, key_rate_router, forecast_router, guide_router, admin_router, budget_template_router]:
     router.include_router(_r)

@@ -27,7 +27,7 @@ def get_main_keyboard() -> ReplyKeyboardMarkup:
         [
 
             KeyboardButton(text="Сообщество"),
-            KeyboardButton(text="Что умеет бот?")
+            KeyboardButton(text="Получить таблицу бюджета")
         ]
     ]
 

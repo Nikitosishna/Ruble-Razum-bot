@@ -12,6 +12,7 @@ OFFER_PATH = FILES_DIR / "offer.pdf"
 GUIDE_PATH = FILES_DIR / "guide.pdf"
 COMMUNITY_IMAGE_PATH = FILES_DIR / "community_pic.png"
 WHAT_CAN_BOT_IMAGE_PATH = FILES_DIR / "what_can_bot_pic.png"
+BUDGET_TEMPLATE_IMAGE_PATH = FILES_DIR / "budget_template_pic.png"
 
 
 
@@ -90,3 +91,12 @@ def get_what_can_bot_image_file() -> FSInputFile:
         )
 
     return FSInputFile(str(WHAT_CAN_BOT_IMAGE_PATH))
+
+
+def get_budget_template_image_file() -> FSInputFile:
+    """
+    Возвращает превью шаблона бюджетной таблицы.
+    Вызывать только после проверки BUDGET_TEMPLATE_IMAGE_PATH.exists().
+    """
+
+    return FSInputFile(str(BUDGET_TEMPLATE_IMAGE_PATH))
