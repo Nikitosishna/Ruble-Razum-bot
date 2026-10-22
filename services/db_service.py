@@ -123,3 +123,15 @@ async def update_payment_status(payment_id: str, status: str) -> None:
         if payment:
             payment.status = status
             await session.commit()
+
+
+async def mark_guide_delivered(payment_id: str) -> None:
+    """Отмечает, что гайд был успешно отправлен пользователю."""
+    async with SessionLocal() as session:
+        result = await session.execute(
+            select(Payment).where(Payment.payment_id == payment_id)
+        )
+        payment = result.scalar_one_or_none()
+        if payment:
+            payment.is_delivered = True
+            await session.commit()

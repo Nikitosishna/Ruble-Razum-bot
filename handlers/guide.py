@@ -5,7 +5,7 @@ from aiogram import Router
 from aiogram.types import Message, CallbackQuery
 
 from keyboards.inline import get_guide_payment_inline_keyboard, get_documents_inline_keyboard
-from services.db_service import create_payment_record, get_succeeded_guide_payment
+from services.db_service import create_payment_record, get_succeeded_guide_payment, mark_guide_delivered
 from services.payment_service import create_payment
 from services.file_service import get_guide_file, get_privacy_policy_file, get_offer_file, GUIDE_COVER_IMAGE_PATH, get_guide_cover_image_file
 
@@ -75,6 +75,7 @@ async def buy_guide_callback(callback: CallbackQuery) -> None:
         )
         try:
             await callback.message.answer_document(get_guide_file())
+            await mark_guide_delivered(existing.payment_id)
         except Exception as e:
             await callback.message.answer(f"❌ Не удалось отправить файл: {e}")
         return
