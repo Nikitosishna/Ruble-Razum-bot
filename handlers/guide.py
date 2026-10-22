@@ -40,7 +40,8 @@ async def guide_handler(message: Message) -> None:
         "9. Как выстроить финансовый план на несколько лет вперёд\n\n"
         "🌐 Бонусный раздел по криптовалютам: основы крипты и блокчейна,"
         " базовые виды активов, кошельки, риски и принципы безопасности\n\n"
-        "💰 Стоимость: <s>1490₽</s> <b>990₽</b>"
+        "💰 Стоимость: <s>1490₽</s> <b>990₽</b>\n\n"
+        "🧪 <i>Временно: тестовая цена 1₽</i>"
     )
 
     if GUIDE_COVER_IMAGE_PATH.exists():
@@ -80,14 +81,14 @@ async def buy_guide_callback(callback: CallbackQuery) -> None:
 
     try:
         payment_data = await create_payment(
-            amount=990.00,
+            amount=1.00,
             description="Гайд по финансовой грамотности"
         )
 
         await create_payment_record(
             telegram_user_id=callback.from_user.id,
             product_name="guide_financial_literacy",
-            amount=990.00,
+            amount=1.00,
             payment_id=payment_data["payment_id"],
             status=payment_data["status"]
         )
