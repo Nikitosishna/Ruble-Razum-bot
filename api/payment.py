@@ -44,13 +44,12 @@ async def _handle_payment(body: bytes) -> None:
     await bot.send_message(
         chat_id=payment_record.telegram_user_id,
         text=(
-            "💳 Оплата прошла успешно! Отправляю гайд.\n\n"
+            "💳 Оплата прошла успешно!\n\n"
+            "Отправляю гайд.\n\n"
             "Поздравляю — вы сделали первый шаг к более осознанному "
             "управлению своими финансами."
         )
     )
-    if GUIDE_COVER_IMAGE_PATH.exists():
-        await bot.send_photo(chat_id=payment_record.telegram_user_id, photo=get_guide_cover_image_file())
     guide_file = get_guide_file()
     await bot.send_document(chat_id=payment_record.telegram_user_id, document=guide_file)
     await mark_guide_delivered(payment_id)
