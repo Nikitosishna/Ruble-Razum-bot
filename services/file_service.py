@@ -15,7 +15,6 @@ WHAT_CAN_BOT_IMAGE_PATH = FILES_DIR / "what_can_bot_pic.png"
 BUDGET_TEMPLATE_IMAGE_PATHS = [
     FILES_DIR / "budget_template_pic1.png",
     FILES_DIR / "budget_template_pic2.png",
-    FILES_DIR / "budget_template_pic3.png",
 ]
 
 
