@@ -71,7 +71,10 @@ async def buy_guide_callback(callback: CallbackQuery) -> None:
         await callback.message.answer(
             "📚 Вы уже приобретали этот гайд ранее. Отправляю его повторно!"
         )
-        await callback.message.answer_document(get_guide_file())
+        try:
+            await callback.message.answer_document(get_guide_file())
+        except Exception as e:
+            await callback.message.answer(f"❌ Не удалось отправить файл: {e}")
         return
 
     try:
