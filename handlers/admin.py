@@ -168,9 +168,11 @@ async def set_rate_handler(message: Message) -> None:
         return
 
     if meeting.result_sent_at:
+        await set_rate_cache(actual_rate)
         await message.answer(
             f"⚠️ Итоги по этому заседанию уже были разосланы "
-            f"({meeting.result_sent_at.strftime('%d.%m.%Y %H:%M')} UTC)."
+            f"({meeting.result_sent_at.strftime('%d.%m.%Y %H:%M')} UTC).\n\n"
+            f"✅ Ставка {actual_rate}% записана в кэш."
         )
         return
 

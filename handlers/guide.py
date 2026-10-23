@@ -43,13 +43,18 @@ async def guide_handler(message: Message) -> None:
     )
 
     if GUIDE_COVER_IMAGE_PATH.exists():
-        await message.answer_photo(photo=get_guide_cover_image_file())
-
-    await message.answer(
-        text=guide_text,
-        reply_markup=get_guide_payment_inline_keyboard(),
-        parse_mode="HTML"
-    )
+        await message.answer_photo(
+            photo=get_guide_cover_image_file(),
+            caption=guide_text,
+            reply_markup=get_guide_payment_inline_keyboard(),
+            parse_mode="HTML"
+        )
+    else:
+        await message.answer(
+            text=guide_text,
+            reply_markup=get_guide_payment_inline_keyboard(),
+            parse_mode="HTML"
+        )
     await message.answer(
         text="📄✍🏼 Переходя к оплате, вы соглашаетесь с офертой и политикой конфиденциальности.",
         reply_markup=get_documents_inline_keyboard()
