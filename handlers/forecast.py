@@ -11,8 +11,6 @@ from services.forecast_service import (
     get_user_forecast,
     save_forecast,
     normalize_forecast,
-    is_user_subscribed,
-    subscribe_user,
 )
 from states.registration import ForecastState
 
@@ -73,18 +71,7 @@ async def process_forecast(message: Message, state: FSMContext) -> None:
         forecast_value=value
     )
 
-    subscribed = await is_user_subscribed(message.from_user.id)
-
-    # Кнопки после сохранения прогноза
-    buttons = []
-    if not subscribed:
-        buttons.append([InlineKeyboardButton(
-            text="Напомнить о следующем заседании",
-            callback_data="subscribe_forecast"
-        )])
-    buttons.append([
-        InlineKeyboardButton(text="Изменить прогноз", callback_data="change_forecast")
-    ])
+    buttons = [[InlineKeyboardButton(text="Изменить прогноз", callback_data="change_forecast")]]
 
     await message.answer(
         f"✅ Ваш прогноз принят: <b>{raw.rstrip('%')}%</b>",
@@ -92,19 +79,5 @@ async def process_forecast(message: Message, state: FSMContext) -> None:
         parse_mode="HTML"
     )
     await state.clear()
-
-
-@router.callback_query(lambda c: c.data == "subscribe_forecast")
-async def subscribe_forecast_callback(callback: CallbackQuery) -> None:
-    """Подписывает пользователя на напоминания о прогнозах."""
-    already = await is_user_subscribed(callback.from_user.id)
-    if already:
-        await callback.message.answer("Вы уже включили напоминание!")
-    else:
-        await subscribe_user(callback.from_user.id)
-        await callback.message.answer(
-            "Напоминание о прогнозе перед следующим заседанием включено."
-        )
-    await callback.answer()
 
 

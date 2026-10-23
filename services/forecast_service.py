@@ -5,7 +5,7 @@
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import select, func
 from database import SessionLocal
-from models.forecast import CBRMeeting, RateForecast, RateSubscription
+from models.forecast import CBRMeeting, RateForecast
 
 # Московское время (UTC+3)
 MSK = timezone(timedelta(hours=3))
@@ -193,39 +193,6 @@ async def save_forecast(
         await session.refresh(forecast)
         return forecast
 
-
-async def is_user_subscribed(telegram_user_id: int) -> bool:
-    """Проверяет, подписан ли пользователь на напоминания."""
-    async with SessionLocal() as session:
-        result = await session.execute(
-            select(RateSubscription).where(
-                RateSubscription.telegram_user_id == telegram_user_id
-            )
-        )
-        return result.scalar_one_or_none() is not None
-
-
-async def subscribe_user(telegram_user_id: int) -> None:
-    """Подписывает пользователя на напоминания."""
-    async with SessionLocal() as session:
-        existing = await session.scalar(
-            select(RateSubscription).where(
-                RateSubscription.telegram_user_id == telegram_user_id
-            )
-        )
-        if not existing:
-            session.add(RateSubscription(telegram_user_id=telegram_user_id))
-            await session.commit()
-
-
-async def get_all_subscribers() -> list[int]:
-    """
-    Возвращает список telegram_user_id всех подписчиков на напоминания.
-    """
-    async with SessionLocal() as session:
-        result = await session.execute(select(RateSubscription))
-        rows = result.scalars().all()
-        return [row.telegram_user_id for row in rows]
 
 
 async def get_meetings_pending_results() -> list[CBRMeeting]:

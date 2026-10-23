@@ -108,32 +108,14 @@ def get_budget_template_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def get_key_rate_keyboard(
-    has_forecast: bool,
-    is_subscribed: bool,
-) -> InlineKeyboardMarkup:
+def get_key_rate_keyboard(has_forecast: bool) -> InlineKeyboardMarkup:
     """
     Клавиатура для раздела ключевой ставки.
     Показывается только когда окно прогноза открыто (за 2 дня до заседания).
-    has_forecast  — пользователь уже отправил прогноз
-    is_subscribed — пользователь подписан на напоминания
     """
-    buttons = []
-
     if has_forecast:
-        buttons.append([InlineKeyboardButton(
-            text="Изменить прогноз",
-            callback_data="change_forecast"
-        )])
-        if not is_subscribed:
-            buttons.append([InlineKeyboardButton(
-                text="Напомнить о следующем прогнозе",
-                callback_data="subscribe_forecast"
-            )])
+        buttons = [[InlineKeyboardButton(text="Изменить прогноз", callback_data="change_forecast")]]
     else:
-        buttons.append([InlineKeyboardButton(
-            text="🎯 Сделать прогноз",
-            callback_data="make_forecast"
-        )])
+        buttons = [[InlineKeyboardButton(text="🎯 Сделать прогноз", callback_data="make_forecast")]]
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)

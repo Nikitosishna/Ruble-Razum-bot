@@ -13,7 +13,6 @@ from services.forecast_service import (
     get_next_meeting,
     _check_window_open,
     get_user_forecast,
-    is_user_subscribed,
 )
 from utils.constants import MONTHS_RU
 
@@ -49,10 +48,8 @@ async def key_rate_handler(message: Message) -> None:
     else:
         meeting_str = "дата уточняется"
 
-    # Всегда проверяем прогноз пользователя (показываем даже после закрытия окна)
-    user_forecast, subscribed = await asyncio.gather(
-        get_user_forecast(message.from_user.id, next_meeting.id) if next_meeting else asyncio.sleep(0),
-        is_user_subscribed(message.from_user.id),
+    user_forecast = await (
+        get_user_forecast(message.from_user.id, next_meeting.id) if next_meeting else asyncio.sleep(0)
     )
 
     # Окно прогноза закрыто
@@ -87,8 +84,5 @@ async def key_rate_handler(message: Message) -> None:
             f"Хотите сделать прогноз по следующему решению?"
         )
 
-    keyboard = get_key_rate_keyboard(
-        has_forecast=user_forecast is not None,
-        is_subscribed=subscribed,
-    )
+    keyboard = get_key_rate_keyboard(has_forecast=user_forecast is not None)
     await message.answer(text, reply_markup=keyboard, parse_mode="HTML")

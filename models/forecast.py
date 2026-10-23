@@ -55,14 +55,3 @@ class RateForecast(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
-class RateSubscription(Base):
-    """
-    Подписка пользователя на напоминания о прогнозах.
-    """
-    __tablename__ = "rate_subscriptions"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-
-    telegram_user_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
-
-    subscribed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

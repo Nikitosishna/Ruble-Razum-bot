@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base, SessionLocal, engine
 from models.payment import Payment # нужно, чтобы SQLAlchemy "увидела" таблицу payments
-from models.forecast import CBRMeeting, RateForecast, RateSubscription
+from models.forecast import CBRMeeting, RateForecast
 
 
 class User(Base):
