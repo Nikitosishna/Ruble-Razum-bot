@@ -1,11 +1,11 @@
 # Обработчик кнопки «Получить таблицу бюджета».
-# Отправляет 3 скрина таблицы альбомом, описание и ссылку для копирования.
+# Отправляет фото таблицы, описание и ссылку для копирования.
 
 from aiogram import Router
-from aiogram.types import Message, InputMediaPhoto
+from aiogram.types import Message
 
 from keyboards.inline import get_budget_template_keyboard
-from services.file_service import get_budget_template_image_files
+from services.file_service import BUDGET_TEMPLATE_IMAGE_PATH, get_budget_template_image_file
 
 router = Router()
 
@@ -24,16 +24,13 @@ _CAPTION = (
 
 @router.message(lambda message: message.text == "Получить таблицу бюджета")
 async def budget_template_handler(message: Message) -> None:
-    """Отправляет альбом скринов таблицы и кнопку для копирования."""
+    """Отправляет фото шаблона таблицы и кнопку для копирования."""
     keyboard = get_budget_template_keyboard()
-    images = get_budget_template_image_files()
 
-    if images:
-        media = [InputMediaPhoto(media=img) for img in images]
-        media[0].caption = _CAPTION
-        await message.answer_media_group(media=media)
-        await message.answer(
-            "Нажми кнопку, чтобы скопировать таблицу себе на Google Drive 👇",
+    if BUDGET_TEMPLATE_IMAGE_PATH.exists():
+        await message.answer_photo(
+            photo=get_budget_template_image_file(),
+            caption=_CAPTION,
             reply_markup=keyboard
         )
     else:
