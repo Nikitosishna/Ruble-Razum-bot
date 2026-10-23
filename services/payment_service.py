@@ -27,10 +27,13 @@ async def create_payment(
             "value": str(amount),  # сумма
             "currency": "RUB"  # российские рубли
         },
-        "capture": True,  # ← вот эта строка! автосписание без подтверждения
+        "capture": True,
         "confirmation": {
-            "type": "redirect",  # тип: редирект на оплату
+            "type": "redirect",
             "return_url": return_url
+        },
+        "payment_method_data": {
+            "type": "sbp"
         },
         "description": description,
         "metadata": {
