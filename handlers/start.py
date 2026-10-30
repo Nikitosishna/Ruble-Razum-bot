@@ -9,7 +9,7 @@ from aiogram.filters import CommandStart, Command
 from keyboards.reply import get_main_keyboard
 from keyboards.inline import get_community_inline_keyboard
 from services.db_service import create_user, get_user_by_telegram_id
-from services.file_service import get_community_image_file
+from services.file_service import get_community_image_file, get_what_can_bot_image_file
 from utils.validators import is_valid_name, is_valid_email
 from states.registration import RegistrationState
 
@@ -99,8 +99,12 @@ _HELP_TEXT = (
 
 @router.message(Command("help"))
 async def help_handler(message: Message) -> None:
-    """Отправляет описание возможностей бота."""
-    await message.answer(_HELP_TEXT)
+    """Отправляет картинку с описанием возможностей бота."""
+    try:
+        await message.answer_photo(photo=get_what_can_bot_image_file(), caption=_HELP_TEXT)
+    except Exception as e:
+        print("Ошибка при отправке картинки /help:", repr(e))
+        await message.answer(_HELP_TEXT)
 
 
 @router.message(lambda message: message.text == "Сообщество")
